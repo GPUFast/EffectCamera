@@ -1,4 +1,4 @@
-package com.gpufast.camera;
+package com.gpufast.effectlib;
 
 import android.content.Context;
 import android.view.SurfaceView;

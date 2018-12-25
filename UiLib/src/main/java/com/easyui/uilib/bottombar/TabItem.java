@@ -14,17 +14,17 @@ import com.easyui.uilib.utils.DensityUtils;
 
 class TabItem extends RelativeLayout {
 
-    private Context mContext;
-    private ImageView mIconView;
-    private Drawable mNormalIcon;
-    private Drawable mSelectedIcon;
-    private LayerDrawable mCompundIcon;
-    private int mIconSize;
-    private int mTopMargin;
-    private String mTitle;
-    private Paint mTextPaint;
-    private int mTextSize;
-    private Typeface mTypeFace;
+    private Context context;
+    private ImageView iconView;
+    private Drawable normalIcon;
+    private Drawable selectedIcon;
+    private LayerDrawable compundIcon;
+    private int iconSize;
+    private int topMargin;
+    private String title;
+    private Paint textPaint;
+    private int textSize;
+    private Typeface typeFace;
 
     public TabItem(Context context) {
         super(context);
@@ -32,7 +32,7 @@ class TabItem extends RelativeLayout {
 
 
     private void init(Context context) {
-        mContext = context;
+        this.context = context;
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
         lp.weight = 3;
@@ -42,34 +42,34 @@ class TabItem extends RelativeLayout {
     }
 
     private void initPaint() {
-        mTextPaint = new Paint();
-        mTextPaint.setAntiAlias(true);
-        mTextPaint.setTextAlign(Paint.Align.CENTER);
-        mTextPaint.setTextSize(DensityUtils.sp2px(mContext, mTextSize));
-        mTextPaint.setTypeface(mTypeFace);
+        textPaint = new Paint();
+        textPaint.setAntiAlias(true);
+        textPaint.setTextAlign(Paint.Align.CENTER);
+        textPaint.setTextSize(DensityUtils.sp2px(context, textSize));
+        textPaint.setTypeface(typeFace);
     }
 
     private void initIconView() {
-        mIconView = new ImageView(mContext);
-        RelativeLayout.LayoutParams lp = new RelativeLayout.LayoutParams(mIconSize, mIconSize);
-        lp.addRule(mTitle == null ? RelativeLayout.CENTER_IN_PARENT : RelativeLayout.CENTER_HORIZONTAL);
-        if (mTitle != null) {
-            lp.topMargin = mTopMargin;
+        iconView = new ImageView(context);
+        RelativeLayout.LayoutParams lp = new RelativeLayout.LayoutParams(iconSize, iconSize);
+        lp.addRule(title == null ? RelativeLayout.CENTER_IN_PARENT : RelativeLayout.CENTER_HORIZONTAL);
+        if (title != null) {
+            lp.topMargin = topMargin;
         }
-        mIconView.setScaleType(ImageView.ScaleType.FIT_XY);
-        mIconView.setLayoutParams(lp);
-        addView(mIconView);
+        iconView.setScaleType(ImageView.ScaleType.FIT_XY);
+        iconView.setLayoutParams(lp);
+        addView(iconView);
         updateIcon();
     }
 
     private void updateIcon() {
-        if (mSelectedIcon == null) {
-            mIconView.setImageDrawable(mNormalIcon);
+        if (selectedIcon == null) {
+            iconView.setImageDrawable(normalIcon);
         } else {
-            mCompundIcon = new LayerDrawable(new Drawable[]{mNormalIcon, mSelectedIcon});
-            mNormalIcon.setAlpha(255);
-            mSelectedIcon.setAlpha(0);
-            mIconView.setImageDrawable(mCompundIcon);
+            compundIcon = new LayerDrawable(new Drawable[]{normalIcon, selectedIcon});
+            normalIcon.setAlpha(255);
+            selectedIcon.setAlpha(0);
+            iconView.setImageDrawable(compundIcon);
         }
     }
 }

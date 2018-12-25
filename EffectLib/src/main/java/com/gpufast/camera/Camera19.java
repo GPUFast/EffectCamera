@@ -72,7 +72,13 @@ public class Camera19 implements ICamera {
         if (isPreviewing) {
             stopPreview();
         }
-        mCamera.startPreview();
+        if (mParams == null || mParams.getPreTexture() == null) return;
+        try {
+            mCamera.setPreviewTexture(mParams.getPreTexture());
+            mCamera.startPreview();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
@@ -100,14 +106,10 @@ public class Camera19 implements ICamera {
         parameters.setPictureFormat(ImageFormat.NV21);
         if (mCameraFace == Camera.CameraInfo.CAMERA_FACING_FRONT) {
             mCamera.setDisplayOrientation(270);
-        } else if (mCameraFace == Camera.CameraInfo.CAMERA_FACING_BACK){
+        } else if (mCameraFace == Camera.CameraInfo.CAMERA_FACING_BACK) {
             mCamera.setDisplayOrientation(90);
         }
-        try {
-            mCamera.setPreviewTexture(mParams.getPreTexture());
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+
     }
 
     @Override

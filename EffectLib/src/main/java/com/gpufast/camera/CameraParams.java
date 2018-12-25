@@ -57,9 +57,9 @@ class CameraParams {
         private AspectRatio ratio;
         private int fps;
 
-        public CameraParams build() throws Exception {
+        public CameraParams build() {
             if (texture == null) {
-                throw new Exception("A CameraParams must be set a texture");
+                throw new RuntimeException("A CameraParams must be set a texture");
             }
             return new CameraParams(this);
         }
