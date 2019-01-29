@@ -1,29 +1,30 @@
 package com.gpufast.camera;
 
 import android.os.Build;
+import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 
-import com.gpufast.utils.LogUtils;
+import com.gpufast.render.Render;
+import com.gpufast.utils.ELog;
 
 /**
  * @author Sivin 2018/10/26
- * Description:摄像头控制引擎
+ * Description:Cmaera引擎
  */
-public class CameraEngine {
-
+public class CameraEngine implements SurfaceHolder.Callback {
     private static final String TAG = "CameraEngine";
-
     private static CameraEngine mInstance = null;
-
     private ICamera mICamera;
-
     //本地预览的surfaceView
     private SurfaceView mLocalPreview = null;
+    private Render mPreViewRender;
+
+    private Render.FrameCallback mFrameCallback = null;
 
     private CameraEngine() {
-        if(Build.VERSION.SDK_INT >Build.VERSION_CODES.LOLLIPOP){
+        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.LOLLIPOP) {
             mICamera = new Camera19();
-        }else{
+        } else {
             mICamera = new Camera19();
         }
     }
@@ -39,33 +40,63 @@ public class CameraEngine {
         return mInstance;
     }
 
-    public void setLocalPreview(SurfaceView view){
+    public void setLocalPreview(SurfaceView view) {
+        ELog.i(TAG,"setLocalPreview");
         mLocalPreview = view;
+        SurfaceHolder holder = mLocalPreview.getHolder();
+        holder.addCallback(this);
     }
 
-    public void openCamera(){
-        mICamera.openFrontCamera();
+
+    @Override
+    public void surfaceCreated(SurfaceHolder holder) {
+
+        mPreViewRender = new Render(holder.getSurface());
+
+        mPreViewRender.render();
+
+        CameraParams params = new CameraParams.Builder()
+                .setWidth(720)
+                .setHeight(1280)
+                .setTexture(mPreViewRender.getVideoTexture())
+                .build();
+        ELog.i(TAG,"setCameraParams");
+        mICamera.setCameraParams(params);
+
+        mICamera.openCamera(ICamera.CAMERA_FRONT);
     }
 
-    /**
-     * 开始预览摄像头数据
-     */
-    public void startPreview(){
-        if(mLocalPreview == null){
-            LogUtils.e(TAG,"localPreview == null");
-        }
+    @Override
+    public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
+        mPreViewRender.onSizeChanged(width, height);
+        mICamera.startPreview();
+    }
+
+    @Override
+    public void surfaceDestroyed(SurfaceHolder holder) {
+        mPreViewRender.destroy();
+        mICamera.stopCamera();
     }
 
     /**
      * 切换摄像头
      */
-    public void switchCamera(){
+    public void switchCamera() {
+        if(mICamera!= null){
+            mICamera.switchCamera();
+        }
+    }
 
+    public void setRenderFrameCallback(Render.FrameCallback callback){
+        if(mPreViewRender != null){
+            mPreViewRender.setFrameCallback(callback);
+        }
     }
 
 
-    public void release(){
-
+    public void release() {
+        mLocalPreview = null;
     }
+
 
 }

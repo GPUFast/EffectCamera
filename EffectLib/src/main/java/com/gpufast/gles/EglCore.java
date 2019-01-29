@@ -65,9 +65,6 @@ public final class EglCore {
         this(null, 0);
     }
 
-    public EGLContext getEGLContext() {
-        return mEGLContext;
-    }
 
     /**
      * Prepares EGL display and context.
@@ -372,5 +369,10 @@ public final class EglCore {
         if ((error = EGL14.eglGetError()) != EGL14.EGL_SUCCESS) {
             throw new RuntimeException(msg + ": EGL error: 0x" + Integer.toHexString(error));
         }
+    }
+
+    public EGLContext getEGLContext() {
+
+        return mEGLContext;
     }
 }

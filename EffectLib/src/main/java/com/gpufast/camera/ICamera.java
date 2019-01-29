@@ -4,7 +4,10 @@ package com.gpufast.camera;
  * @author Sivin 2018/10/26
  * Description:
  */
-public interface ICamera {
+ interface ICamera {
+
+    int CAMERA_FRONT = 0;
+    int CAMERA_BACK = 1;
 
     /**
      * 设置相机参数
@@ -12,24 +15,13 @@ public interface ICamera {
      */
     void setCameraParams(CameraParams params);
 
-    /**
-     * 打开前置摄像头
-     * @return success return true otherwise return false
-     */
-    boolean openFrontCamera();
 
-    /**
-     * 打开后置摄像头
-     * @return success return true otherwise return false
-     */
-    boolean openBackCamera();
-
+    void openCamera(int orientation);
 
     /**
      * 前后摄像头切换
      */
     void switchCamera();
-
 
     /**
      * 开始预览数据

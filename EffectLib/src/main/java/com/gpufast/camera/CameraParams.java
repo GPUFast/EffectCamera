@@ -10,22 +10,18 @@ class CameraParams {
 
     private SurfaceTexture mPreTexture;
 
-    private int preViewWidth;
+    private int width;
 
-    private int preViewHeight;
-
-    private AspectRatio ratio;
+    private int height;
 
     private int fps;
 
-    private CameraParams() {
-    }
+    private CameraParams() {}
 
     private CameraParams(Builder builder) {
         mPreTexture = builder.texture;
-        preViewWidth = builder.width;
-        preViewHeight = builder.height;
-        ratio = builder.ratio;
+        width = builder.width;
+        height = builder.height;
         fps = builder.fps;
     }
 
@@ -33,16 +29,12 @@ class CameraParams {
         return mPreTexture;
     }
 
-    int getPreViewWidth() {
-        return preViewWidth;
+    int getWidth() {
+        return width;
     }
 
-    int getPreViewHeight() {
-        return preViewHeight;
-    }
-
-    AspectRatio getRatio() {
-        return ratio;
+    int getHeight() {
+        return height;
     }
 
     public int getFps() {
@@ -54,7 +46,6 @@ class CameraParams {
         private SurfaceTexture texture;
         private int width;
         private int height;
-        private AspectRatio ratio;
         private int fps;
 
         public CameraParams build() {
@@ -64,24 +55,24 @@ class CameraParams {
             return new CameraParams(this);
         }
 
-        public void setTexture(SurfaceTexture texture) {
+        public Builder setTexture(SurfaceTexture texture) {
             this.texture = texture;
+            return this;
         }
 
-        public void setWidth(int width) {
+        public Builder setWidth(int width) {
             this.width = width;
+            return this;
         }
 
-        public void setHeight(int height) {
+        public Builder setHeight(int height) {
             this.height = height;
+            return this;
         }
 
-        public void setRatio(AspectRatio ratio) {
-            this.ratio = ratio;
-        }
-
-        public void setFps(int fps) {
+        public Builder setFps(int fps) {
             this.fps = fps;
+            return this;
         }
     }
 }

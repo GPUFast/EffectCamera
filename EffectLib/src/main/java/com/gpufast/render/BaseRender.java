@@ -1,5 +1,6 @@
 package com.gpufast.render;
 
+import android.graphics.SurfaceTexture;
 import android.opengl.EGLContext;
 import android.os.Handler;
 import android.os.Looper;
@@ -7,128 +8,121 @@ import android.os.Message;
 import android.util.Log;
 import android.view.Surface;
 
-
 import com.gpufast.gles.EglCore;
-import com.gpufast.gles.GLESUtil;
 import com.gpufast.gles.WindowSurface;
 
 import java.lang.ref.WeakReference;
 
 
-public class BaseRender {
+public abstract class BaseRender {
+    public static String TAG = BaseRender.class.getSimpleName();
 
-    private int mWidth;
-    private int mHeight;
     private RenderThread mRenderThread;
 
-    public BaseRender(EGLContext shareContext,String name) {
-        mRenderThread = new RenderThread(shareContext);
-        if(!"".equals(name)){
-            mRenderThread.setName(name);
-        }
+
+    public BaseRender(Surface surface) {
+        onRenderInit();
+        RenderCallback callback = getRenderCallback();
+        mRenderThread = new RenderThread(surface, callback);
+
     }
 
-    public void setRenderCallback(RenderCallback callback) {
-        mRenderThread.setRenderCallback(callback);
-    }
-
-    public void startRender() {
+    public void render() {
         mRenderThread.start();
         mRenderThread.waitUntilReady();
     }
 
-    public void sendSurfaceChanged(int width, int height) {
-        mRenderThread.getHandler().sendSurfaceChanged(width, height);
+    public boolean isReady() {
+        return mRenderThread.isReady();
     }
 
-    public void sendFrameAvaible(int textureId) {
-        mRenderThread.getHandler().sendDoFrame(textureId);
-    }
-    public EGLContext getEGLContext(){
-        return mRenderThread.getEGLContext();
-    }
+    protected abstract void onRenderInit();
 
 
-    public void setSize(int width, int height) {
-        if (mWidth != width || mHeight != height) {
-            mWidth = width;
-            mHeight = height;
-            mRenderThread.getHandler().sendSurfaceChanged(width, height);
-        }
+    public void onSizeChanged(int width, int height) {
+        mRenderThread.getHandler().sendFrameSizeChanged(width, height);
     }
 
-    public void stopRender() {
+    public void destroy() {
         mRenderThread.getHandler().sendShutdown();
     }
 
-    private static class RenderThread extends Thread {
-        private static final String TAG = "RenderThread";
-        private volatile RenderHandler mHandler;
-        private final Object mStartLock = new Object();
-        private boolean mReady = false;
-        private EglCore mEglCore;
-        private WindowSurface mInputWindowSurface;
-        private WeakReference<EGLContext> mEGLShareContext;
-        private RenderCallback callback;
-
-        public RenderThread(EGLContext shareContext) {
-            mEGLShareContext = new WeakReference<>(shareContext);
+    public void onFrameAvailable() {
+        if (mRenderThread.mReady){
+            mRenderThread.getHandler().sendFrameAvailable();
         }
 
-        public void setRenderCallback(RenderCallback cb) {
+    }
+
+    protected abstract RenderCallback getRenderCallback();
+
+
+    public EGLContext getEGLContext() {
+        return mRenderThread.getEglContext();
+    }
+
+
+    private static class RenderThread extends Thread {
+        private final Object mStartLock = new Object();
+        private Surface surface;
+        private RenderCallback callback;
+        private boolean mReady = false;
+        private RenderHandler mHandler;
+        private EglCore mEglCore;
+        private WindowSurface mWindowSurface;
+
+        public boolean isReady() {
+            return mReady;
+        }
+
+        private EGLContext getEglContext() {
+            return mEglCore.getEGLContext();
+        }
+
+        public RenderHandler getHandler() {
+            return mHandler;
+        }
+
+        RenderThread(Surface surface, RenderCallback cb) {
+            this.surface = surface;
             callback = cb;
         }
 
-        public EGLContext getEGLContext(){
-            return mEglCore.getEGLContext();
-        }
 
         @Override
         public void run() {
             Looper.prepare();
             mHandler = new RenderHandler(this);
-            mEglCore = new EglCore(mEGLShareContext.get(), EglCore.FLAG_RECORDABLE | EglCore.FLAG_TRY_GLES3);
-
-            if (callback == null) {
-                throw new RuntimeException("you must provide a renderCallback,so EGL can get an available surface");
-            }
-            Surface inputSurface = callback.getInputSurface();
-            if (inputSurface == null) {
-                throw new RuntimeException("inputSurface must be available");
-            }
-            mInputWindowSurface = new WindowSurface(mEglCore, inputSurface, true);
-            mInputWindowSurface.makeCurrent();
+            mEglCore = new EglCore();
+            mWindowSurface = new WindowSurface(mEglCore, surface, true);
+            mWindowSurface.makeCurrent();
             callback.onInit();
+
             synchronized (mStartLock) {
                 mReady = true;
-                mStartLock.notify();
+                mStartLock.notify();  //通知调用线程，渲染线程准备工作完成
             }
+            //开始循环
             Looper.loop();
-
-            Log.d(TAG, "Render thread start destroy");
-
+            mReady = false;
             callback.onDestroy();
-            callback = null;
-            releaseGl();
+            releaseEGL();
+        }
+
+        private void releaseEGL() {
+            mEglCore.makeNothingCurrent();
             mEglCore.release();
-            synchronized (mStartLock) {
-                mReady = false;
+            if (mWindowSurface != null) {
+                mWindowSurface.release();
+                mWindowSurface = null;
             }
         }
 
         /**
-         * 开始离屏渲染
-         */
-        private void draw(int textureId) {
-            callback.onDraw(textureId);
-            mInputWindowSurface.swapBuffers();
-            callback.onDrawFinish();
-        }
-
-        /**
+         * 可以在其他线程调用
          * 函数渲染线程调用，使渲染线程等待编码渲染宣城准备完毕
          */
-        public void waitUntilReady() {
+        void waitUntilReady() {
             synchronized (mStartLock) {
                 while (!mReady) {
                     try {
@@ -138,113 +132,97 @@ public class BaseRender {
             }
         }
 
-        /**
-         * 必须在当前线程中调用
-         */
-        private void shutdown() {
-            Looper.myLooper().quit();
-        }
+        private void onSizeChanged(int width, int height) {
 
-
-        public RenderHandler getHandler() {
-            return mHandler;
-        }
-
-        private void surfaceChanged(int width, int height) {
             callback.onSizeChanged(width, height);
         }
 
-        private void releaseGl() {
-            GLESUtil.checkGlError("releaseGl done");
-            if (mInputWindowSurface != null) {
-                mInputWindowSurface.release();
-                mInputWindowSurface = null;
-            }
-            callback = null;
-            mEGLShareContext = null;
-            mEglCore.makeNothingCurrent();
+        private void onFrameAvailable() {
+            callback.onDraw();
+            mWindowSurface.swapBuffers();
+        }
+
+
+        /**
+         * 必须在当前线程调用
+         */
+        private void shutdown() {
+            Log.d(TAG, "shutdown");
+            Looper.myLooper().quit();
         }
     }
 
+
+    private static class RenderHandler extends Handler {
+
+
+        private static final int ON_FRAME_AVAILABLE = 0;
+
+        private static final int ON_FRAME_SIZE_CHANGED = 1;
+
+        private static final int ON_RENDER_SHUTDOWN = 2;
+
+        private static final int ON_START_CAPTURE = 3;
+
+
+        private WeakReference<RenderThread> mWeakRenderThread;
+
+        public void sendFrameAvailable() {
+            sendMessage(obtainMessage(ON_FRAME_AVAILABLE));
+        }
+
+        public void sendFrameSizeChanged(int width, int height) {
+            sendMessage(obtainMessage(ON_FRAME_SIZE_CHANGED, width, height));
+        }
+
+        public void sendShutdown() {
+            sendMessage(obtainMessage(ON_RENDER_SHUTDOWN));
+        }
+
+        public void setOnStartCapture() {
+            sendMessage(obtainMessage(ON_START_CAPTURE));
+        }
+
+
+        public RenderHandler(RenderThread thread) {
+            mWeakRenderThread = new WeakReference<>(thread);
+        }
+
+        @Override
+        public void handleMessage(Message msg) {
+
+            RenderThread renderThread = mWeakRenderThread.get();
+            if (renderThread == null) {
+                Log.w(TAG, "EncoderRenderHandler.handleMessage: weak ref is null");
+                return;
+            }
+            int what = msg.what;
+            switch (what) {
+                case ON_FRAME_AVAILABLE:
+                    renderThread.onFrameAvailable();
+                    break;
+                case ON_FRAME_SIZE_CHANGED:
+                    renderThread.onSizeChanged(msg.arg1, msg.arg2);
+                    break;
+                case ON_RENDER_SHUTDOWN:
+                    renderThread.shutdown();
+                    break;
+            }
+        }
+    }
+
+    public abstract SurfaceTexture getVideoTexture();
 
     interface RenderCallback {
 
         void onInit();
 
-        Surface getInputSurface();
-
         void onSizeChanged(int width, int height);
 
-        void onDraw(int textureId);
-
-        void onDrawFinish();
+        void onDraw();
 
         void onDestroy();
 
-    }
-
-
-    private static class RenderHandler extends Handler {
-        private static final String TAG = "RenderHandler";
-
-        private static final int MSG_SURFACE_CREATED = 0;
-        private static final int MSG_SURFACE_CHANGED = 1;
-        private static final int MSG_DO_FRAME = 2;
-        private static final int MSG_SHUTDOWN = 3;
-
-
-        private WeakReference<RenderThread> mWeakRenderThread;
-
-
-        public RenderHandler(RenderThread rt) {
-            mWeakRenderThread = new WeakReference<>(rt);
-        }
-
-
-        public void sendSurfaceCreated() {
-            sendMessage(obtainMessage(RenderHandler.MSG_SURFACE_CREATED));
-        }
-
-        public void sendSurfaceChanged(int width, int height) {
-            sendMessage(obtainMessage(RenderHandler.MSG_SURFACE_CHANGED, width, height));
-        }
-
-
-        public void sendDoFrame(int textureId) {
-            sendMessage(obtainMessage(RenderHandler.MSG_DO_FRAME, textureId, 0));
-        }
-
-
-        public void sendShutdown() {
-            sendMessage(obtainMessage(RenderHandler.MSG_SHUTDOWN));
-        }
-
-        @Override
-        public void handleMessage(Message msg) {
-            int what = msg.what;
-
-            RenderThread renderThread = mWeakRenderThread.get();
-            if (renderThread == null) {
-                Log.w(TAG, "RenderHandler.handleMessage: weak ref is null");
-                return;
-            }
-
-            switch (what) {
-                case MSG_SURFACE_CREATED:
-                    break;
-                case MSG_SURFACE_CHANGED:
-                    renderThread.surfaceChanged(msg.arg1, msg.arg2);
-                    break;
-                case MSG_DO_FRAME:
-                    renderThread.draw(msg.arg1);
-                    break;
-                case MSG_SHUTDOWN:
-                    renderThread.shutdown();
-                    break;
-                default:
-                    throw new RuntimeException("unknown message " + what);
-            }
-        }
     }
 
 }

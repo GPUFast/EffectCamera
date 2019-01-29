@@ -1,17 +1,19 @@
 package com.gpufast.camera;
 
-import android.graphics.ImageFormat;
 import android.hardware.Camera;
+
+import com.gpufast.utils.ELog;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * @author Sivin 2018/10/26
  * Description:使用旧版本camera类API实现实现,
  * TODO：该类没有实现数据回调的接口，目前有待测试，是否数据回调是否与帧数据同时返回
  */
-public class Camera19 implements ICamera {
+class Camera19 implements ICamera {
     private Camera mCamera = null;
     private int mCameraFace;
     private boolean isPreviewing = false;
@@ -22,8 +24,7 @@ public class Camera19 implements ICamera {
         mParams = params;
     }
 
-    @Override
-    public boolean openFrontCamera() {
+    private boolean openFrontCamera() {
         int numberOfCameras = Camera.getNumberOfCameras();
         Camera.CameraInfo cameraInfo = new Camera.CameraInfo();
         for (int i = 0; i < numberOfCameras; i++) {
@@ -37,8 +38,7 @@ public class Camera19 implements ICamera {
         return false;
     }
 
-    @Override
-    public boolean openBackCamera() {
+    private boolean openBackCamera() {
         int numberOfCameras = Camera.getNumberOfCameras();
         Camera.CameraInfo cameraInfo = new Camera.CameraInfo();
         for (int i = 0; i < numberOfCameras; i++) {
@@ -52,17 +52,31 @@ public class Camera19 implements ICamera {
         return false;
     }
 
+
     @Override
     public void switchCamera() {
-        if (mCamera == null) return;
-        stopCamera();
+        if (mCamera != null) {
+            stopCamera();
+        }
         if (mCameraFace == Camera.CameraInfo.CAMERA_FACING_BACK) {
             openFrontCamera();//打开当前选中的摄像头
         } else {
             openBackCamera();//打开当前选中的摄像头
         }
-        initCamera();
+        setCameraParameter();
         startPreview();
+    }
+
+    public void openCamera(int orientation) {
+        if (mCamera != null) {
+            stopCamera();
+        }
+        if (orientation == ICamera.CAMERA_FRONT) {
+            openFrontCamera();//打开当前选中的摄像头
+        } else {
+            openBackCamera();//打开当前选中的摄像头
+        }
+        setCameraParameter();
     }
 
 
@@ -74,6 +88,7 @@ public class Camera19 implements ICamera {
         }
         if (mParams == null || mParams.getPreTexture() == null) return;
         try {
+            mCamera.setDisplayOrientation(90);
             mCamera.setPreviewTexture(mParams.getPreTexture());
             mCamera.startPreview();
         } catch (IOException e) {
@@ -90,26 +105,21 @@ public class Camera19 implements ICamera {
     }
 
 
-    private void initCamera() {
+    private void setCameraParameter() {
         if (mCamera == null) return;
         Camera.Parameters parameters = mCamera.getParameters();
         //获取支持的预览尺寸
         List<Camera.Size> supportedPreviewSizes = parameters.getSupportedPreviewSizes();
         Camera.Size preViewSize = CameraUtils.chooseOptimalSize(supportedPreviewSizes,
-                mParams.getPreViewWidth(), mParams.getPreViewHeight(), mParams.getRatio().ofFloat());
+                mParams.getWidth(), mParams.getHeight());
         parameters.setPreviewSize(preViewSize.width, preViewSize.height);
         // 设置摄像头为自动聚焦
         List<String> focusModes = parameters.getSupportedFocusModes();
         if (focusModes.contains(Camera.Parameters.FOCUS_MODE_CONTINUOUS_VIDEO)) {
             parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_VIDEO);
         }
-        parameters.setPictureFormat(ImageFormat.NV21);
-        if (mCameraFace == Camera.CameraInfo.CAMERA_FACING_FRONT) {
-            mCamera.setDisplayOrientation(270);
-        } else if (mCameraFace == Camera.CameraInfo.CAMERA_FACING_BACK) {
-            mCamera.setDisplayOrientation(90);
-        }
-
+        parameters.setPreviewFpsRange(24000,30000);
+        mCamera.setParameters(parameters);
     }
 
     @Override
