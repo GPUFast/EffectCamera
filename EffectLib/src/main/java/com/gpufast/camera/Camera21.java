@@ -4,17 +4,24 @@ package com.gpufast.camera;
  * @author Sivin 2018/10/29
  * Description:Camera2 架构实现
  */
-public class Camera21 implements ICamera {
-
+ class Camera21 implements ICamera {
 
 
     @Override
-    public boolean openFrontCamera() {
+    public void setCameraParams(CameraParams params) {
+
+    }
+
+   @Override
+   public void openCamera(int orientation) {
+
+   }
+
+   private boolean openFrontCamera() {
         return false;
     }
 
-    @Override
-    public boolean openBackCamera() {
+   private boolean openBackCamera() {
         return false;
     }
 
