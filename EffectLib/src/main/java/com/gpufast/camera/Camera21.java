@@ -18,10 +18,14 @@ package com.gpufast.camera;
    }
 
    private boolean openFrontCamera() {
+
+
         return false;
     }
 
    private boolean openBackCamera() {
+
+
         return false;
     }
 

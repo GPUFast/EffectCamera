@@ -1,6 +1,7 @@
 package com.gpufast.camera;
 
 import android.hardware.Camera;
+import android.view.Surface;
 
 import com.gpufast.utils.ELog;
 

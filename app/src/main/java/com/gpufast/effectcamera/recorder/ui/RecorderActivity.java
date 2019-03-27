@@ -24,5 +24,6 @@ public class RecorderActivity extends AppCompatActivity {
         FragmentTransaction ft = fm.beginTransaction();
         ft.add(R.id.id_container,new RecorderFragment());
         ft.commit();
+
     }
 }

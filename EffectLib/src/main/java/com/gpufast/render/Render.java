@@ -8,8 +8,11 @@ import android.opengl.GLES20;
 import android.opengl.GLUtils;
 import android.view.Surface;
 
+import com.gpufast.effect.filter.CropScaleFilter;
 import com.gpufast.effect.filter.ImageFilter;
 import com.gpufast.effect.filter.OesToRgbFilter;
+import com.gpufast.recorder.IRecorder;
+import com.gpufast.recorder.RecorderFactory;
 import com.gpufast.utils.ELog;
 
 public class Render extends BaseRender implements SurfaceTexture.OnFrameAvailableListener {
@@ -28,10 +31,18 @@ public class Render extends BaseRender implements SurfaceTexture.OnFrameAvailabl
 
     //预处理滤镜
     private OesToRgbFilter mOesToRgbFilter;
+
+    //缩放裁剪滤镜
+    private CropScaleFilter mScaleFilter;
+
     //最终显示的滤镜
-    private ImageFilter imageFilter;
+    private ImageFilter mImageFilter;
 
     private FrameCallback mCallback = null;
+
+    private IRecorder mRecorder;
+
+    private PresentationTime mPTime;
 
     public Render(Surface surface) {
         super(surface);
@@ -45,13 +56,18 @@ public class Render extends BaseRender implements SurfaceTexture.OnFrameAvailabl
         textures = new int[1];
 
         mOesToRgbFilter = new OesToRgbFilter();
-        imageFilter = new ImageFilter();
+        mScaleFilter = new CropScaleFilter();
+        mImageFilter = new ImageFilter();
+
 
         swTexture = new SurfaceTexture(-1);
         swTexture.detachFromGLContext();
         swTexture.setOnFrameAvailableListener(this);
-    }
 
+
+        mRecorder = RecorderFactory.getRecorderInstance();
+        mPTime = new PresentationTime(mRecorder.getFps());
+    }
 
 
     private void setupTexture() {
@@ -71,48 +87,58 @@ public class Render extends BaseRender implements SurfaceTexture.OnFrameAvailabl
                 setupTexture();
                 swTexture.attachToGLContext(textures[0]);
                 mOesToRgbFilter.init();
-                imageFilter.init();
+                mScaleFilter.init();
+                mImageFilter.init();
+                mRecorder.setShareContext(getEGLContext());
             }
 
             @Override
             public void onSizeChanged(int width, int height) {
                 mWidth = width;
                 mHeight = height;
+                mScaleFilter.setCropSize(width, height);
+                mScaleFilter.setSrcSize(srcTexWidth, srcTexHeight);
                 mOesToRgbFilter.onSizeChanged(srcTexWidth, srcTexHeight);
             }
+
 
             @Override
             public void onDraw() {
                 swTexture.updateTexImage();
                 swTexture.getTransformMatrix(textureMatrix);
+                mPTime.record();
                 int srcRgbId = mOesToRgbFilter.drawTexture(textures[0], textureMatrix);
-
                 int newTexId = 0;
-                if(mCallback != null){
-                    newTexId = mCallback.onFrameCallback(getEGLContext(),srcRgbId,srcTexWidth,srcTexHeight);
+                if (mCallback != null) {
+                    newTexId = mCallback.onFrameCallback(getEGLContext(), srcRgbId, srcTexWidth, srcTexHeight);
                 }
-
-                if(newTexId == 0){
+                if (newTexId == 0) {
                     newTexId = srcRgbId;
                 }
 
+                mRecorder.sendVideoFrame(newTexId,srcTexWidth,srcTexHeight,mPTime.presentationTimeUs);
+
+                //屏幕适配
+                int aniTextureId = mScaleFilter.drawTexture(newTexId);
+
                 GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0);
-                GLES20.glViewport(0,0,mWidth,mHeight);
+                GLES20.glViewport(0, 0, mWidth, mHeight);
                 GLES20.glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
                 GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);
-                imageFilter.drawTexture(newTexId);
+                mImageFilter.drawTexture(aniTextureId);
             }
 
             @Override
             public void onDestroy() {
-                if(mCallback != null){
+                if (mCallback != null) {
                     mCallback.onEglContextDestroy();
                 }
                 GLES20.glDeleteTextures(1, textures, 0);
                 swTexture.release();
                 swTexture.setOnFrameAvailableListener(null);
                 mOesToRgbFilter.destroy();
-                imageFilter.destroy();
+                mScaleFilter.destroy();
+                mImageFilter.destroy();
             }
         };
     }

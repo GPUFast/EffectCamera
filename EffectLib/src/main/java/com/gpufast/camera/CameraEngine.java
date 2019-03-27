@@ -25,7 +25,7 @@ public class CameraEngine implements SurfaceHolder.Callback {
         if (Build.VERSION.SDK_INT > Build.VERSION_CODES.LOLLIPOP) {
             mICamera = new Camera19();
         } else {
-            mICamera = new Camera19();
+            mICamera = new Camera21();
         }
     }
 
