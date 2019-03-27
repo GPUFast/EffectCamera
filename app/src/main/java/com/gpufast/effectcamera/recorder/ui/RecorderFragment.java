@@ -27,7 +27,6 @@ public class RecorderFragment extends BaseFragment implements RecorderContract.V
         mPreview = mRootView.findViewById(R.id.id_camera_preview);
         mSwitchCameraBtn = mRootView.findViewById(R.id.id_switch_camera);
         mSwitchCameraBtn.setOnClickListener(this);
-
         mPresenter = new RecorderPresenter();
         mPresenter.attachView(this);
         mPresenter.init();
@@ -64,10 +63,6 @@ public class RecorderFragment extends BaseFragment implements RecorderContract.V
             case R.id.id_start_recorder_btn:
                 mPresenter.startRecorder();
                 break;
-
         }
-
-
-
     }
 }

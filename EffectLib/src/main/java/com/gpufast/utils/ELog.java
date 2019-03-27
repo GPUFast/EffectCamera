@@ -25,5 +25,7 @@ public class ELog {
     public static void e(String tag,String msg){
         Log.e(tag, ELOG_TAG+msg);
     }
-
+    public static void e(String tag,String msg,Throwable e){
+        Log.e(tag, ELOG_TAG+msg,e);
+    }
 }

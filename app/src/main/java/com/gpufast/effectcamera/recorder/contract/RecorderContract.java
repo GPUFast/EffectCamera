@@ -2,7 +2,7 @@ package com.gpufast.effectcamera.recorder.contract;
 
 import android.view.SurfaceView;
 
-import com.gpufast.recoder.RecorderParams;
+import com.gpufast.recorder.RecorderParams;
 
 public interface RecorderContract {
 
@@ -29,7 +29,7 @@ public interface RecorderContract {
         void switchCamera();
 
         //设置视频录制参数
-        void setRecorderParameter(RecorderParams params);
+        void setRecorderParameter(RecorderParams  params);
 
         //开始录制
         void startRecorder();
