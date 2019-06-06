@@ -46,13 +46,13 @@ public class FileWriter extends Thread {
      * 检查文件合法性
      *
      * @param file file
-     * @return true :合法，false:不合法
+     * @return true :不合法，false:合法
      */
     private boolean checkoutFile(File file) {
 
         if (file == null) return true;
 
-        if(file.isDirectory()) return true;
+        if (file.isDirectory()) return true;
 
         if (file.exists()) return false;
 
@@ -68,8 +68,8 @@ public class FileWriter extends Thread {
     private void createChannel_low26(String dstPath) {
         try {
             File file = new File(dstPath);
-            if (checkoutFile(file)){
-                ELog.e(this,"can't get file :"+dstPath);
+            if (checkoutFile(file)) {
+                ELog.e(this, "can't get file :" + dstPath);
                 return;
             }
             os = new FileOutputStream(file);
@@ -84,8 +84,8 @@ public class FileWriter extends Thread {
     private void createChannel_up26(String dstPath) {
         try {
             File file = new File(dstPath);
-            if(checkoutFile(file)) {
-                ELog.e(this,"can't get file :"+dstPath);
+            if (checkoutFile(file)) {
+                ELog.e(this, "can't get file :" + dstPath);
                 return;
             }
             dstChannel = FileChannel.open(Paths.get(dstPath), StandardOpenOption.READ, StandardOpenOption.WRITE, StandardOpenOption.CREATE);
@@ -104,9 +104,7 @@ public class FileWriter extends Thread {
     }
 
     private void release() {
-
         ELog.i(this, "fileWriter stop");
-
         if (dstChannel != null) {
             try {
                 dstChannel.close();
@@ -168,7 +166,7 @@ public class FileWriter extends Thread {
                 if (fileWriter == null) return;
                 ByteBuffer data = (ByteBuffer) msg.obj;
                 try {
-                    ELog.d(FileWriter.class,"write data ="+data.limit());
+                    ELog.d(FileWriter.class, "write data =" + data.limit());
                     fileWriter.dstChannel.write(data);
                 } catch (IOException e) {
                     e.printStackTrace();
