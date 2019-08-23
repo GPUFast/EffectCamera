@@ -10,7 +10,7 @@ import android.widget.Button;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.gpufast.effectcamera.recorder.ui.RecorderActivity;
-import com.gpufast.utils.ELog;
+import com.gpufast.logger.ELog;
 import com.tbruyelle.rxpermissions2.RxPermissions;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
