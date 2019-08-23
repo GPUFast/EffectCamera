@@ -53,8 +53,8 @@ public class HwAudioEncoder implements AudioEncoder {
 
     private ThreadUtils.ThreadChecker checker;
 
-    public HwAudioEncoder(MediaCodecWrapperFactory mediaCodecFactory,
-                          AudioCodecType codecType, String codecName) {
+    HwAudioEncoder(MediaCodecWrapperFactory mediaCodecFactory,
+                   AudioCodecType codecType, String codecName) {
         this.mediaCodecFactory = mediaCodecFactory;
         this.codecType = codecType;
         this.codecName = codecName;
@@ -91,7 +91,7 @@ public class HwAudioEncoder implements AudioEncoder {
             format.setString(MediaFormat.KEY_MIME, codecType.mimeType());
             format.setInteger(MediaFormat.KEY_CHANNEL_MASK, AudioFormat.CHANNEL_IN_STEREO);
             format.setInteger(MediaFormat.KEY_AAC_PROFILE, MediaCodecInfo.CodecProfileLevel.AACObjectLC);
-            format.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE, 0);
+            format.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE, 100 * 1024);
 
             codec.configure(format, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
 
