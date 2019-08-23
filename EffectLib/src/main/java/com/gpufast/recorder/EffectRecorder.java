@@ -19,13 +19,13 @@ public class EffectRecorder extends BaseRecorder {
     private static final String TAG = EffectRecorder.class.getSimpleName();
 
     //视频码率(Kilobits per second）
-    private final static int VIDEO_BITRATE = 4000;
+    private final static int VIDEO_BITRATE = 1500;
     //视频帧率
     private final static int VIDEO_FRAME_RATE = 30;
     //音频采样率
-    private final static int AUDIO_SAMPLE_RATE = 4000;
+    private final static int AUDIO_SAMPLE_RATE = 44100;
     //音频码率
-    private final static int AUDIO_BITRATE = 30;
+    private final static int AUDIO_BITRATE = 64000;
 
     private volatile boolean recorderStarted = false;
 
@@ -132,7 +132,6 @@ public class EffectRecorder extends BaseRecorder {
                 ELog.e(TAG, "can't create video encoder.");
             }
         }
-
 
         if (mAudioClient != null) {
             mAudioClient.start();
