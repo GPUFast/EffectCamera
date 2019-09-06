@@ -24,11 +24,17 @@ public class AudioClient implements AudioCollector.OnAudioFrameCallback {
 
 
     public AudioClient(AudioEncoder encoder,
-                       AudioEncoder.Settings settings,
+                       AudioSetting settings,
                        AudioEncoder.AudioEncoderCallback callback) {
-        mEncoderThread = new EncoderThread(encoder, settings, callback);
+
+        if(encoder == null || settings == null) return;
+
+        mEncoderThread = new EncoderThread(encoder,
+                new AudioEncoder.Settings(settings.getSampleRate(),settings.getBitrate()),
+                callback);
+
         mAudioCollector = new AudioCollector();
-        mAudioCollector.init(this);
+        mAudioCollector.init(new AudioCollector.Settings(settings.getSampleRate()),this);
     }
 
 
@@ -47,6 +53,9 @@ public class AudioClient implements AudioCollector.OnAudioFrameCallback {
     public void stop() {
         if (mEncoderHandler != null) {
             mEncoderHandler.sendToStop();
+        }
+        if(mAudioCollector != null){
+            mAudioCollector.stop();
         }
     }
 
