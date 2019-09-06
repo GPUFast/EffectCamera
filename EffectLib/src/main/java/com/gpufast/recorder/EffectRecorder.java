@@ -28,6 +28,7 @@ public class EffectRecorder extends BaseRecorder {
     //音频码率bps
     private final static int AUDIO_BITRATE = 64000;
 
+    private volatile boolean isStartingRecorder = false;
     private volatile boolean recorderStarted = false;
 
     private EGLContext shareContext;
@@ -40,7 +41,6 @@ public class EffectRecorder extends BaseRecorder {
 
     private VideoClient mVideoClient;
 
-
     private AudioSetting audioSetting;
 
     private AudioEncoderFactory audioEncoderFactory;
@@ -52,6 +52,8 @@ public class EffectRecorder extends BaseRecorder {
     private Mp4Muxer mMp4Muxer;
 
     private RecorderListener mRecorderListener;
+
+    private String mediaSavePath = null;
 
 
     EffectRecorder() {
@@ -97,8 +99,7 @@ public class EffectRecorder extends BaseRecorder {
                 audioCodecInfo = audioEncoderFactory.getSupportCodecInfo();
             }
         }
-
-        mMp4Muxer = new Mp4Muxer(params.getSavePath());
+        mediaSavePath = params.getSavePath();
     }
 
     @Override
@@ -116,10 +117,14 @@ public class EffectRecorder extends BaseRecorder {
 
     @Override
     public void startRecorder() {
-        if (recorderStarted) {
+        if (isStartingRecorder || recorderStarted) {
             return;
         }
-        recorderStarted = true;
+        isStartingRecorder = true;
+
+        if(mMp4Muxer == null){
+            mMp4Muxer = new Mp4Muxer(mediaSavePath);
+        }
 
         if (videoEncoderFactory != null && videoCodecInfo != null) {
             ELog.i(TAG, "create video encoder");
@@ -127,6 +132,7 @@ public class EffectRecorder extends BaseRecorder {
             if (videoEncoder != null) {
                 mVideoClient = new VideoClient(videoEncoder, videoSettings, mMp4Muxer);
                 mVideoClient.start();
+                recorderStarted = true;
                 return;
             } else {
                 ELog.e(TAG, "can't create video encoder.");
@@ -141,10 +147,11 @@ public class EffectRecorder extends BaseRecorder {
                 mAudioClient.start();
             }
         }
-
         if (mRecorderListener != null) {
             mRecorderListener.onRecorderStart();
         }
+
+
     }
 
 
@@ -168,8 +175,11 @@ public class EffectRecorder extends BaseRecorder {
             mAudioClient.stop();
         }
         if (mMp4Muxer != null) {
-            mMp4Muxer.stop();
+            mMp4Muxer.release();
+            mMp4Muxer = null;
         }
+        isStartingRecorder = false;
+        recorderStarted = false;
     }
 
 
@@ -196,10 +206,7 @@ public class EffectRecorder extends BaseRecorder {
             mAudioClient.release();
             mVideoClient = null;
         }
-        if (mMp4Muxer != null) {
-            mMp4Muxer.release();
-            mMp4Muxer = null;
-        }
+
     }
 
 

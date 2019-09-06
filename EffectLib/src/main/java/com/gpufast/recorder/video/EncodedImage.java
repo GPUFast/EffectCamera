@@ -160,16 +160,6 @@ public class EncodedImage {
             return this;
         }
 
-        /**
-         * for MediaMuxer
-         * @param mediaFormat
-         * @return
-         */
-        public Builder setMediaFormat(MediaFormat mediaFormat){
-            this.mediaFormat = mediaFormat;
-            return this;
-        }
-
         public EncodedImage createEncodedImage() {
             return new EncodedImage(buffer, encodedWidth, encodedHeight, captureTimeNs, frameType,
                     rotation, completeFrame, qp,mediaFormat,bufferInfo);

@@ -6,7 +6,6 @@ import android.media.MediaMuxer;
 import com.gpufast.logger.ELog;
 import com.gpufast.recorder.audio.EncodedAudio;
 import com.gpufast.recorder.audio.encoder.AudioEncoder;
-import com.gpufast.recorder.file.FileWriter;
 import com.gpufast.recorder.video.EncodedImage;
 import com.gpufast.recorder.video.VideoEncoder;
 
@@ -20,9 +19,12 @@ public class Mp4Muxer implements VideoEncoder.VideoEncoderCallback, AudioEncoder
     private MediaMuxer mMediaMuxer;
     private int audioTrackIndex = -1;
     private int videoTrackIndex = -1;
-    private boolean mediaMuxerStarted = false;
 
-    private FileWriter mH264Writer;
+    private boolean mediaMuxerStarted = false;
+    private boolean videoTrackHasReady = false;
+    private boolean audioTrackHasRead = false;
+
+    private boolean hasRelease = false;
 
     public Mp4Muxer(String outputPath) {
         try {
@@ -33,24 +35,33 @@ public class Mp4Muxer implements VideoEncoder.VideoEncoderCallback, AudioEncoder
     }
 
     @Override
-    public void updateVideoMediaFormat(MediaFormat format) {
+    public void onUpdateVideoMediaFormat(MediaFormat format) {
+        if (videoTrackHasReady || hasRelease) return;
+        ELog.i(TAG, "onUpdateVideoMediaFormat:" + format);
         videoTrackIndex = mMediaMuxer.addTrack(format);
         if (videoTrackIndex < 0) {
             ELog.e(TAG, "Add video track failed");
+            return;
         }
+        videoTrackHasReady = true;
+        ELog.i(TAG, "video track has ready");
     }
 
     @Override
-    public void onUpdateAudioFormat(MediaFormat mediaFormat) {
+    public void onUpdateAudioMediaFormat(MediaFormat mediaFormat) {
+        if (audioTrackHasRead || hasRelease) return;
+        ELog.i(TAG, "onUpdateAudioMediaFormat");
         audioTrackIndex = mMediaMuxer.addTrack(mediaFormat);
         if (audioTrackIndex < 0) {
             ELog.e(TAG, "Add audio track failed");
+            return;
         }
+        audioTrackHasRead = true;
     }
 
     @Override
     public void onEncodedFrame(EncodedImage frame) {
-        if (videoTrackIndex != -1) {
+        if (videoTrackHasReady) {
             start();
             mMediaMuxer.writeSampleData(videoTrackIndex, frame.buffer, frame.bufferInfo);
             ELog.i(TAG, "Write video data ，time=" + frame.bufferInfo.presentationTimeUs);
@@ -60,7 +71,8 @@ public class Mp4Muxer implements VideoEncoder.VideoEncoderCallback, AudioEncoder
 
     @Override
     public void onEncodedAudio(EncodedAudio frame) {
-        if (audioTrackIndex != -1) {
+        if (videoTrackHasReady && audioTrackHasRead) {
+            start();
             mMediaMuxer.writeSampleData(audioTrackIndex, frame.mBuffer, frame.mBufferInfo);
             ELog.i(TAG, "Write audio data，time=" + frame.mBufferInfo.presentationTimeUs);
         }
@@ -78,22 +90,20 @@ public class Mp4Muxer implements VideoEncoder.VideoEncoderCallback, AudioEncoder
         }
     }
 
-    public void stop() {
-        try {
-            if (mMediaMuxer != null)
-                mMediaMuxer.stop();
-        } catch (Exception e) {
-            ELog.e(TAG, "Stop MediaMuxer:" + e.getMessage());
-        }
-    }
-
     public void release() {
+        ELog.i(TAG, "Release MediaMuxer");
         try {
-            if (mMediaMuxer != null)
+            if (mMediaMuxer != null) {
                 mMediaMuxer.release();
+            }
         } catch (Exception e) {
             ELog.e(TAG, "Release MediaMuxer:" + e.getMessage());
         }
+        hasRelease = true;
+        videoTrackIndex = -1;
+        audioTrackIndex = -1;
+        videoTrackHasReady = false;
+        audioTrackHasRead = false;
     }
 
 }

@@ -26,7 +26,7 @@ class EncoderFactory {
     static AudioEncoderFactory getAudioEncoder(EncoderType type) {
 
         switch (type) {
-            case HW_VIDEO_ENCODER:
+            case HW_AUDIO_ENCODER:
                 return new HwAudioEncoderFactory();
             case SW_AUDIO_ENCODER:
                 //TODO:编写音频软编码实现

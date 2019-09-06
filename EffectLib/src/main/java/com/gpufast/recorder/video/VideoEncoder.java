@@ -39,7 +39,7 @@ public interface VideoEncoder {
 
     interface VideoEncoderCallback {
 
-        void updateVideoMediaFormat(MediaFormat format);
+        void onUpdateVideoMediaFormat(MediaFormat format);
 
         void onEncodedFrame(EncodedImage frame);
     }
