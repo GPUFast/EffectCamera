@@ -17,10 +17,10 @@ import java.io.IOException;
  */
 public class Mp4Muxer implements VideoEncoder.VideoEncoderCallback, AudioEncoder.AudioEncoderCallback {
     private static final String TAG = Mp4Muxer.class.getSimpleName();
-    public MediaMuxer mMediaMuxer;
+    private MediaMuxer mMediaMuxer;
     private int audioTrackIndex = -1;
     private int videoTrackIndex = -1;
-    boolean mediaMuxerStarted = false;
+    private boolean mediaMuxerStarted = false;
 
     private FileWriter mH264Writer;
 
