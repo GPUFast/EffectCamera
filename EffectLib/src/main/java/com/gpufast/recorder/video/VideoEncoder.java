@@ -1,20 +1,22 @@
 package com.gpufast.recorder.video;
 
+import android.media.MediaFormat;
+
 import com.gpufast.recorder.video.encoder.VideoCodecStatus;
 
 public interface VideoEncoder {
 
-    class VideoSettings {
+    class Settings {
         //宽度高度
         public final int width;
         public final int height;
-        //开始码率
+        //起始码率
         public final int startBitrate; // Kilobits per second.
-        //帧率
+        //最大帧率
         public final int maxFrameRate;
 
-        public VideoSettings(int width, int height,
-                             int startBitrate, int maxFrameRate) {
+        public Settings(int width, int height,
+                        int startBitrate, int maxFrameRate) {
             this.width = width;
             this.height = height;
             this.startBitrate = startBitrate;
@@ -22,16 +24,12 @@ public interface VideoEncoder {
         }
     }
 
-    interface VideoEncoderCallback {
-        void onEncodedFrame(EncodedImage frame);
-    }
-
     default boolean isHardwareEncoder() {
         return true;
     }
 
     //初始化编码器
-    VideoCodecStatus initEncoder(VideoSettings settings, VideoEncoderCallback encodeCallback);
+    VideoCodecStatus initEncoder(Settings settings, VideoEncoderCallback encodeCallback);
 
     VideoCodecStatus encode(VideoFrame frame);
 
@@ -39,5 +37,10 @@ public interface VideoEncoder {
 
     VideoCodecStatus release();
 
+    interface VideoEncoderCallback {
 
+        void onUpdateVideoMediaFormat(MediaFormat format);
+
+        void onEncodedFrame(EncodedImage frame);
+    }
 }

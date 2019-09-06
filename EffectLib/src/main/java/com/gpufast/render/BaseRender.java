@@ -9,6 +9,7 @@ import android.util.Log;
 import android.view.Surface;
 
 import com.gpufast.gles.EglCore;
+import com.gpufast.logger.ELog;
 
 import java.lang.ref.WeakReference;
 
@@ -18,11 +19,10 @@ public abstract class BaseRender {
 
     private RenderThread mRenderThread;
 
-    public BaseRender(Surface surface) {
+    BaseRender(Surface surface) {
         onRenderInit();
         RenderCallback callback = getRenderCallback();
         mRenderThread = new RenderThread(surface, callback);
-
     }
 
     public void render() {
@@ -45,7 +45,7 @@ public abstract class BaseRender {
         mRenderThread.getHandler().sendShutdown();
     }
 
-    public void onFrameAvailable() {
+    void onFrameAvailable() {
         if (mRenderThread.mReady) {
             mRenderThread.getHandler().sendFrameAvailable();
         }
@@ -61,13 +61,13 @@ public abstract class BaseRender {
 
     private static class RenderThread extends Thread {
         private final Object mStartLock = new Object();
+        private boolean mReady = false;
         private Surface surface;
         private RenderCallback callback;
-        private boolean mReady = false;
         private RenderHandler mHandler;
         private EglCore mEglCore;
 
-        public boolean isReady() {
+        boolean isReady() {
             return mReady;
         }
 
@@ -75,7 +75,7 @@ public abstract class BaseRender {
             return mEglCore.getEglContext();
         }
 
-        public RenderHandler getHandler() {
+        RenderHandler getHandler() {
             return mHandler;
         }
 
@@ -146,49 +146,41 @@ public abstract class BaseRender {
 
     private static class RenderHandler extends Handler {
 
-
         private static final int ON_FRAME_AVAILABLE = 0;
-
         private static final int ON_FRAME_SIZE_CHANGED = 1;
-
         private static final int ON_RENDER_SHUTDOWN = 2;
-
         private static final int ON_START_CAPTURE = 3;
-
 
         private WeakReference<RenderThread> mWeakRenderThread;
 
-        public void sendFrameAvailable() {
+        void sendFrameAvailable() {
             sendMessage(obtainMessage(ON_FRAME_AVAILABLE));
         }
 
-        public void sendFrameSizeChanged(int width, int height) {
+        void sendFrameSizeChanged(int width, int height) {
             sendMessage(obtainMessage(ON_FRAME_SIZE_CHANGED, width, height));
         }
 
-        public void sendShutdown() {
+        void sendShutdown() {
             sendMessage(obtainMessage(ON_RENDER_SHUTDOWN));
         }
 
-        public void setOnStartCapture() {
+        void setOnStartCapture() {
             sendMessage(obtainMessage(ON_START_CAPTURE));
         }
 
-
-        public RenderHandler(RenderThread thread) {
+        RenderHandler(RenderThread thread) {
             mWeakRenderThread = new WeakReference<>(thread);
         }
 
         @Override
         public void handleMessage(Message msg) {
-
             RenderThread renderThread = mWeakRenderThread.get();
             if (renderThread == null) {
-                Log.w(TAG, "EncoderRenderHandler.handleMessage: weak ref is null");
+                ELog.e(TAG, "EncoderRenderHandler.handleMessage: weak ref is null");
                 return;
             }
-            int what = msg.what;
-            switch (what) {
+            switch (msg.what) {
                 case ON_FRAME_AVAILABLE:
                     renderThread.onFrameAvailable();
                     break;
@@ -205,7 +197,6 @@ public abstract class BaseRender {
     public abstract SurfaceTexture getVideoTexture();
 
     interface RenderCallback {
-
         void onInit();
 
         void onSizeChanged(int width, int height);
@@ -213,7 +204,6 @@ public abstract class BaseRender {
         void onDraw();
 
         void onDestroy();
-
     }
 
 }

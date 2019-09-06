@@ -6,25 +6,48 @@ public class RecorderParams {
         hyperslow, slow, standard, fast, veryFast
     }
 
-    //录制视频的宽度和高度
+    /**
+     * 录制视频的高度
+     */
     private int videoWidth;
-
+    /**
+     * 录制视频的宽度
+     */
     private int videoHeight;
 
-    //视频总录制时长
+    /**
+     * 录制的总时长
+     */
     private int allTime;
 
-    //视频保存的位置
-    private String videoPath;
+    /**
+     *录制资源存放的路径
+     */
+    private String savePath;
 
-    //是否将音频一起录制进去
-    private boolean hasAudio = true;
+    /**
+     * 是否录制语音
+     */
+    private boolean enableAudio = true;
 
+    /**
+     * 是否录制视频
+     */
+    private boolean enableVideo = true;
+
+    /**
+     * 录制速度
+     */
     private SpeedType speedType;
 
-    //背景音乐
-    private String backgroundMuiscUrl;
+    /**
+     * 背景音乐路径
+     */
+    private String backgroundMusicUrl;
 
+    /**
+     * 是否开启硬编码
+     */
     private boolean hwEncoder = true;
 
     public int getVideoWidth() {
@@ -51,20 +74,21 @@ public class RecorderParams {
         this.allTime = allTime;
     }
 
-    public String getVideoPath() {
-        return videoPath;
+    public String getSavePath() {
+        return savePath;
     }
 
-    public void setVideoPath(String videoPath) {
-        this.videoPath = videoPath;
+    public void setSavePath(String savePath) {
+        this.savePath = savePath;
     }
 
-    public boolean isHasAudio() {
-        return hasAudio;
+    public boolean isEnableAudio() {
+        return enableAudio;
     }
 
-    public void setHasAudio(boolean hasAudio) {
-        this.hasAudio = hasAudio;
+
+    public void setEnableAudio(boolean enableAudio) {
+        this.enableAudio = enableAudio;
     }
 
     public SpeedType getSpeedType() {
@@ -75,12 +99,12 @@ public class RecorderParams {
         this.speedType = speedType;
     }
 
-    public String getBackgroundMuiscUrl() {
-        return backgroundMuiscUrl;
+    public String getBackgroundMusicUrl() {
+        return backgroundMusicUrl;
     }
 
-    public void setBackgroundMuiscUrl(String backgroundMuiscUrl) {
-        this.backgroundMuiscUrl = backgroundMuiscUrl;
+    public void setBackgroundMusicUrl(String backgroundMusicUrl) {
+        this.backgroundMusicUrl = backgroundMusicUrl;
     }
 
     public boolean isHwEncoder() {
@@ -89,5 +113,13 @@ public class RecorderParams {
 
     public void setHwEncoder(boolean hwEncoder) {
         this.hwEncoder = hwEncoder;
+    }
+
+    public boolean isEnableVideo() {
+        return enableVideo;
+    }
+
+    public void setEnableVideo(boolean enableVideo) {
+        this.enableVideo = enableVideo;
     }
 }

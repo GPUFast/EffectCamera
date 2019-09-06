@@ -1,10 +1,11 @@
 package com.gpufast.effectcamera.recorder.ui;
 
 import android.os.Bundle;
-import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentTransaction;
-import android.support.v7.app.AppCompatActivity;
 import android.view.WindowManager;
+
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentTransaction;
 
 import com.gpufast.effectcamera.R;
 
@@ -24,6 +25,11 @@ public class RecorderActivity extends AppCompatActivity {
         FragmentTransaction ft = fm.beginTransaction();
         ft.add(R.id.id_container,new RecorderFragment());
         ft.commit();
+    }
 
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
     }
 }
