@@ -185,7 +185,7 @@ class HardwareVideoEncoder implements VideoEncoder {
             //配置颜色格式
             format.setInteger(MediaFormat.KEY_COLOR_FORMAT, colorFormat);
             //配置帧率
-            format.setInteger(MediaFormat.KEY_FRAME_RATE, bitrateAdjuster.getAdjustedBitrateBps());
+            format.setInteger(MediaFormat.KEY_FRAME_RATE, bitrateAdjuster.getCodecConfigFrameRate());
             //配置关键帧间隔
             format.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, keyFrameIntervalSec);
 
@@ -214,17 +214,10 @@ class HardwareVideoEncoder implements VideoEncoder {
             }
             ELog.i(TAG, " video Format: " + format);
             codec.configure(format, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
-
-            MediaFormat outputFormat = codec.getOutputFormat();
-            if (encoderCallback != null) {
-                encoderCallback.updateVideoMediaFormat(outputFormat);
-            }
-
             mEglCore = EglCore.create(sharedContext, EglCore.CONFIG_RECORDABLE);
             textureInputSurface = codec.createInputSurface();
             mEglCore.createSurface(textureInputSurface);
             mEglCore.makeCurrent();
-
             ELog.i(TAG, "name:" + codecName + " codec.start(): ");
             codec.start();
 
@@ -351,6 +344,7 @@ class HardwareVideoEncoder implements VideoEncoder {
             codecOutputBuffer.position(info.offset);
             codecOutputBuffer.limit(info.offset + info.size);
 
+
             if ((info.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) != 0) {
                 ELog.d(TAG, "Config frame generated. Offset: " + info.offset + ". Size: " + info.size);
                 configBuffer = ByteBuffer.allocateDirect(info.size);
@@ -395,15 +389,14 @@ class HardwareVideoEncoder implements VideoEncoder {
                 info.presentationTimeUs = (System.nanoTime() - startTime) / 1000L;
 
                 builder.setBuffer(frameBuffer)
-                        .setMediaFormat(codec.getOutputFormat())
                         .setBufferInfo(info)
                         .setFrameType(frameType);
 
                 if (encoderCallback != null) {
+                    encoderCallback.onUpdateVideoMediaFormat(codec.getOutputFormat());
                     encoderCallback.onEncodedFrame(builder.createEncodedImage());
                 }
             }
-
             codec.releaseOutputBuffer(index, info.presentationTimeUs);
         } catch (IllegalStateException e) {
             ELog.e(TAG, "deliverOutput failed:" + e.getLocalizedMessage());
@@ -422,7 +415,6 @@ class HardwareVideoEncoder implements VideoEncoder {
             codec.release();
         } catch (Exception e) {
             ELog.e(TAG, "Media encoder release failed:" + e.getLocalizedMessage());
-            // Propagate exceptions caught during release back to the main thread.
             shutdownException = e;
         }
         configBuffer = null;
