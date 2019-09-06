@@ -48,6 +48,10 @@ public abstract class BaseWorker implements IRecorder {
         public void setAudioProcessor(AudioProcessor callback) {
         }
 
+        @Override
+        public boolean isRecording() {
+            return false;
+        }
     }
 
 }
