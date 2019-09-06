@@ -86,9 +86,10 @@ public class VideoClient {
             initEncoder();
             synchronized (mStartLock) {
                 mReady = true;
-                mStartLock.notify();  //通知调用线程，渲染线程准备工作完成
+                mStartLock.notify();
             }
             Looper.loop();
+            deInitEncoder();
         }
 
         void waitUntilReady() {
@@ -106,7 +107,12 @@ public class VideoClient {
                 mVideoEncoder.initEncoder(mSettings, mCallback);
             }
         }
-
+        private void deInitEncoder() {
+            if (mVideoEncoder != null) {
+                mVideoEncoder.release();
+                mVideoEncoder = null;
+            }
+        }
         void sendVideoFrame(VideoFrame frame) {
             if (mVideoEncoder != null && mReady) {
                 mVideoEncoder.encode(frame);
