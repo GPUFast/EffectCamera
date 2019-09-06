@@ -7,6 +7,7 @@ import android.media.MediaRecorder;
 import com.gpufast.logger.ELog;
 
 public class AudioCollector {
+    private static final String TAG = "AudioCollector";
 
    static class Settings {
         private final int sampleRate;
@@ -14,11 +15,6 @@ public class AudioCollector {
             this.sampleRate = sampleRate;
         }
     }
-
-    private static final String TAG = "AudioCollector";
-    private static final int SAMPLE_RATE = 44100;//采样率
-    private static final int BIT_RATE = 48000;//码率 MediaCodecInfo.CodecProfileLevel.AACObjectLC >= 80Kbps
-
 
     private AudioRecord mAudioRecord;
 
@@ -92,9 +88,7 @@ public class AudioCollector {
             if (callback == null || mAudioRecord == null) return;
             long start = System.currentTimeMillis();
             //等待检测录音器启动录制是否成功
-
             mAudioRecord.startRecording();
-
             while (keepAlive) {
                 int state = mAudioRecord.getRecordingState();
                 if (state == AudioRecord.RECORDSTATE_STOPPED) {
@@ -118,7 +112,6 @@ public class AudioCollector {
                 mReady = true;
                 mStartLock.notify();  //通知调用线程,准备工作已完成
             }
-
             byte[] buffer = new byte[1024];
             while (keepAlive) {
                 int num = mAudioRecord.read(buffer, 0, buffer.length);
