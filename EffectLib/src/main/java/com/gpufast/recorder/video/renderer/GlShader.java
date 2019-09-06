@@ -3,7 +3,7 @@ package com.gpufast.recorder.video.renderer;
 import android.opengl.GLES20;
 
 import com.gpufast.gles.GLESUtil;
-import com.gpufast.utils.ELog;
+import com.gpufast.logger.ELog;
 
 import java.nio.FloatBuffer;
 

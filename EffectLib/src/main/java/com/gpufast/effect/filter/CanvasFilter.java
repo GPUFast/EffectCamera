@@ -141,7 +141,7 @@ public class CanvasFilter {
         GLES30.glTexParameterf(GLES30.GL_TEXTURE_2D, GLES30.GL_TEXTURE_WRAP_S, GLES20.GL_CLAMP_TO_EDGE);
         GLES30.glTexParameterf(GLES30.GL_TEXTURE_2D, GLES30.GL_TEXTURE_WRAP_T, GLES20.GL_CLAMP_TO_EDGE);
 
-        //解除绑定,等到使用的时候在绑定就行了
+        //解除绑定,等到使用的时候在绑定
         GLES30.glBindTexture(GLES30.GL_TEXTURE_2D, 0);
         return textures[0];
     }

@@ -68,11 +68,11 @@ public class VideoFrame {
      * Interface for buffers that are stored as a single texture, either in OES or RGB format.
      */
     public interface TextureBuffer extends Buffer {
-        enum Type {
+        enum TextureType {
             OES(GLES11Ext.GL_TEXTURE_EXTERNAL_OES),
             RGB(GLES20.GL_TEXTURE_2D);
             private final int glTarget;
-            Type(final int glTarget) {
+            TextureType(final int glTarget) {
                 this.glTarget = glTarget;
             }
             public int getGlTarget() {
@@ -80,7 +80,7 @@ public class VideoFrame {
             }
         }
 
-        Type getType();
+        TextureType getType();
 
         int getTextureId();
         /**
@@ -148,59 +148,5 @@ public class VideoFrame {
         buffer.release();
     }
 
-    public static class TextureBufferImpl implements TextureBuffer{
 
-        private int width;
-        private int height;
-        private int textureId;
-        private Type type;
-
-        public TextureBufferImpl(int textureId,int width, int height,Type type) {
-            this.width = width;
-            this.height = height;
-            this.textureId = textureId;
-            this.type = type;
-        }
-
-        @Override
-        public int getWidth() {
-            return width;
-        }
-
-        @Override
-        public int getHeight() {
-            return height;
-        }
-
-        @Override
-        public I420Buffer toI420() {
-            return null;
-        }
-
-        @Override
-        public void release() {
-
-        }
-
-        @Override
-        public Buffer cropAndScale(int cropX, int cropY, int cropWidth, int cropHeight, int scaleWidth, int scaleHeight) {
-            return null;
-        }
-
-        @Override
-        public Type getType() {
-            return type;
-        }
-
-        @Override
-        public int getTextureId() {
-            return textureId;
-        }
-
-        @Override
-        public Matrix getTransformMatrix() {
-            return null;
-        }
-
-    }
 }
