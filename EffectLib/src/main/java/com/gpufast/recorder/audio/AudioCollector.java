@@ -8,9 +8,17 @@ import com.gpufast.logger.ELog;
 
 public class AudioCollector {
 
+   static class Settings {
+        private final int sampleRate;
+        Settings(int sampleRate) {
+            this.sampleRate = sampleRate;
+        }
+    }
+
     private static final String TAG = "AudioCollector";
     private static final int SAMPLE_RATE = 44100;//采样率
     private static final int BIT_RATE = 48000;//码率 MediaCodecInfo.CodecProfileLevel.AACObjectLC >= 80Kbps
+
 
     private AudioRecord mAudioRecord;
 
@@ -18,27 +26,23 @@ public class AudioCollector {
 
     private OnAudioFrameCallback callback;
 
-    private long start;
 
-    public void init(OnAudioFrameCallback callback) {
+    public void init(Settings settings, OnAudioFrameCallback callback) {
         int minBufferSize = AudioRecord.getMinBufferSize(
-                SAMPLE_RATE, AudioFormat.CHANNEL_IN_STEREO, AudioFormat.ENCODING_PCM_16BIT);
+                settings.sampleRate, AudioFormat.CHANNEL_IN_STEREO, AudioFormat.ENCODING_PCM_16BIT);
+
         if (minBufferSize == AudioRecord.ERROR || minBufferSize == AudioRecord.ERROR_BAD_VALUE) {
             ELog.e(TAG, "AudioRecord.getMinBufferSize failed: " + minBufferSize);
         }
 
-        mAudioRecord = new AudioRecord(MediaRecorder.AudioSource.MIC, SAMPLE_RATE,
+        mAudioRecord = new AudioRecord(MediaRecorder.AudioSource.MIC, settings.sampleRate,
                 AudioFormat.CHANNEL_IN_STEREO, AudioFormat.ENCODING_PCM_16BIT, minBufferSize);
 
-        start = System.nanoTime();
 
         this.callback = callback;
     }
 
     public void start() {
-        if (mAudioRecord != null) {
-            mAudioRecord.startRecording();
-        }
         collectThread = new AudioCollectThread(callback);
         collectThread.start();
         //检测等待录音器是否启动录制
@@ -85,9 +89,12 @@ public class AudioCollector {
         @Override
         public void run() {
             //没有数据接收的地方，采集无意义
-            if (callback == null) return;
+            if (callback == null || mAudioRecord == null) return;
             long start = System.currentTimeMillis();
             //等待检测录音器启动录制是否成功
+
+            mAudioRecord.startRecording();
+
             while (keepAlive) {
                 int state = mAudioRecord.getRecordingState();
                 if (state == AudioRecord.RECORDSTATE_STOPPED) {
@@ -100,6 +107,7 @@ public class AudioCollector {
                             mStartLock.notify();  //释放等待线程
                         }
                         //TODO:报告录音器开启失败
+                        ELog.e(TAG, "audio AudioCollectThread start failed.");
                         return;
                     }
                 } else {
@@ -133,7 +141,6 @@ public class AudioCollector {
                 }
             }
         }
-
     }
 
     public interface OnAudioFrameCallback {
