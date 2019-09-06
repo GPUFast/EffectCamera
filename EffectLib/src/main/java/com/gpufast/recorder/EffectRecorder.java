@@ -4,6 +4,7 @@ import android.opengl.EGLContext;
 
 import com.gpufast.logger.ELog;
 import com.gpufast.recorder.audio.AudioClient;
+import com.gpufast.recorder.audio.AudioSetting;
 import com.gpufast.recorder.audio.encoder.AudioCodecInfo;
 import com.gpufast.recorder.audio.encoder.AudioEncoder;
 import com.gpufast.recorder.audio.encoder.AudioEncoderFactory;
@@ -24,7 +25,7 @@ public class EffectRecorder extends BaseRecorder {
     private final static int VIDEO_FRAME_RATE = 30;
     //音频采样率
     private final static int AUDIO_SAMPLE_RATE = 44100;
-    //音频码率
+    //音频码率bps
     private final static int AUDIO_BITRATE = 64000;
 
     private volatile boolean recorderStarted = false;
@@ -40,7 +41,7 @@ public class EffectRecorder extends BaseRecorder {
     private VideoClient mVideoClient;
 
 
-    private AudioEncoder.Settings audioSettings;
+    private AudioSetting audioSetting;
 
     private AudioEncoderFactory audioEncoderFactory;
 
@@ -61,17 +62,16 @@ public class EffectRecorder extends BaseRecorder {
         if (params == null) {
             return;
         }
+
         if (params.isEnableVideo()) {
             //get video encoder params
             videoSettings = new VideoEncoder.Settings(params.getVideoWidth(),
                     params.getVideoHeight(), VIDEO_BITRATE, VIDEO_FRAME_RATE);
-
             if (params.isHwEncoder()) {
                 videoEncoderFactory = EncoderFactory.getVideoEncoderFactory(EncoderType.HW_VIDEO_ENCODER);
             } else {
                 videoEncoderFactory = EncoderFactory.getVideoEncoderFactory(EncoderType.SW_VIDEO_ENCODER);
             }
-
             if (videoEncoderFactory != null) {
                 if (shareContext != null) {
                     videoEncoderFactory.setShareContext(shareContext);
@@ -87,7 +87,7 @@ public class EffectRecorder extends BaseRecorder {
         }
 
         if (params.isEnableAudio()) {
-            audioSettings = new AudioEncoder.Settings(AUDIO_SAMPLE_RATE, AUDIO_BITRATE);
+            audioSetting = new AudioSetting(AUDIO_SAMPLE_RATE, AUDIO_BITRATE);
             if (params.isHwEncoder()) {
                 audioEncoderFactory = EncoderFactory.getAudioEncoder(EncoderType.HW_AUDIO_ENCODER);
             } else {
@@ -121,7 +121,7 @@ public class EffectRecorder extends BaseRecorder {
         }
         recorderStarted = true;
 
-        if (videoEncoderFactory != null) {
+        if (videoEncoderFactory != null && videoCodecInfo != null) {
             ELog.i(TAG, "create video encoder");
             VideoEncoder videoEncoder = videoEncoderFactory.createEncoder(videoCodecInfo);
             if (videoEncoder != null) {
@@ -133,8 +133,13 @@ public class EffectRecorder extends BaseRecorder {
             }
         }
 
-        if (mAudioClient != null) {
-            mAudioClient.start();
+        if (audioEncoderFactory != null && audioCodecInfo != null) {
+            ELog.i(TAG, "create audio encoder");
+            AudioEncoder audioEncoder = audioEncoderFactory.createEncoder(audioCodecInfo);
+            if (audioEncoder != null) {
+                mAudioClient = new AudioClient(audioEncoder, audioSetting, mMp4Muxer);
+                mAudioClient.start();
+            }
         }
 
         if (mRecorderListener != null) {
@@ -143,15 +148,12 @@ public class EffectRecorder extends BaseRecorder {
     }
 
 
-
     @Override
     public void sendVideoFrame(int textureId, int srcWidth, int srcHeight) {
         if (mVideoClient != null && recorderStarted) {
             mVideoClient.sendVideoFrame(textureId, srcWidth, srcHeight);
         }
     }
-
-
 
 
     @Override
