@@ -25,7 +25,7 @@ public interface AudioEncoder {
 
     interface AudioEncoderCallback {
 
-        void onUpdateAudioFormat(MediaFormat mediaFormat);
+        void onUpdateAudioMediaFormat(MediaFormat mediaFormat);
 
         void onEncodedAudio(EncodedAudio frame);
     }
