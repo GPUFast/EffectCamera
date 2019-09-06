@@ -1,13 +1,12 @@
 package com.gpufast.recorder.file;
 
-
 import android.annotation.TargetApi;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 
-import com.gpufast.utils.ELog;
+import com.gpufast.logger.ELog;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -24,7 +23,7 @@ public class FileWriter extends Thread {
     private WriteHandler mHandler;
     private FileOutputStream os;
     private FileChannel dstChannel;
-
+    //目标路径
     private String dstPath;
 
     public FileWriter(String dstPath) {
@@ -46,29 +45,42 @@ public class FileWriter extends Thread {
      * 检查文件合法性
      *
      * @param file file
-     * @return true :不合法，false:合法
+     *
+     * @return true :合法，false:不合法
      */
     private boolean checkoutFile(File file) {
+        //非空检测
+        if (file == null)
+            return false;
 
-        if (file == null) return true;
+        //必须是文件，不能是目录
+        if (file.isDirectory())
+            return false;
 
-        if (file.isDirectory()) return true;
+        //文件已经存在，则删除掉文件，重新写入
+        if (file.exists()) {
+            return file.delete();
+        }
 
-        if (file.exists()) return false;
-
+        //文件不存在，检测文件是否具有多级目录
+        //如果是多级目录，则判断目录是否已经创建，
+        //如果没有创建，则为文件创建多级目录。
         File parentFile = file.getParentFile();
-        if (parentFile.isFile()) return true;
+        if (parentFile.isFile()){ //出现异常错误。
+            return false;
+        }
 
-        if (parentFile.exists()) return false;
+        if (parentFile.exists()){ //目录已创建
+            return true;
+        }
 
-        return !parentFile.mkdirs();
-
+        return parentFile.mkdirs();
     }
 
     private void createChannel_low26(String dstPath) {
         try {
             File file = new File(dstPath);
-            if (checkoutFile(file)) {
+            if (!checkoutFile(file)) {
                 ELog.e(this, "can't get file :" + dstPath);
                 return;
             }
@@ -79,16 +91,16 @@ public class FileWriter extends Thread {
         }
     }
 
-
     @TargetApi(Build.VERSION_CODES.O)
     private void createChannel_up26(String dstPath) {
         try {
             File file = new File(dstPath);
-            if (checkoutFile(file)) {
+            if (!checkoutFile(file)) {
                 ELog.e(this, "can't get file :" + dstPath);
                 return;
             }
-            dstChannel = FileChannel.open(Paths.get(dstPath), StandardOpenOption.READ, StandardOpenOption.WRITE, StandardOpenOption.CREATE);
+            dstChannel = FileChannel
+                .open(Paths.get(dstPath), StandardOpenOption.READ, StandardOpenOption.WRITE, StandardOpenOption.CREATE);
         } catch (IOException e) {
             ELog.e(this, "create channel failed");
         }
@@ -104,7 +116,9 @@ public class FileWriter extends Thread {
     }
 
     private void release() {
+
         ELog.i(this, "fileWriter stop");
+
         if (dstChannel != null) {
             try {
                 dstChannel.close();
@@ -137,12 +151,10 @@ public class FileWriter extends Thread {
         }
     }
 
-
     private static class WriteHandler extends Handler {
 
         private static final int MSG_WRITE_FILE = 0x001;
         private static final int MSG_STOP_WRITE = 0x002;
-
 
         private WeakReference<FileWriter> mWeakFileWriter;
 
@@ -163,8 +175,9 @@ public class FileWriter extends Thread {
 
             if (msg.what == MSG_WRITE_FILE) {
                 FileWriter fileWriter = mWeakFileWriter.get();
-                if (fileWriter == null) return;
-                ByteBuffer data = (ByteBuffer) msg.obj;
+                if (fileWriter == null)
+                    return;
+                ByteBuffer data = (ByteBuffer)msg.obj;
                 try {
                     ELog.d(FileWriter.class, "write data =" + data.limit());
                     fileWriter.dstChannel.write(data);

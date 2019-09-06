@@ -1,5 +1,8 @@
 package com.gpufast.recorder.video;
 
+import android.media.MediaCodec;
+import android.media.MediaFormat;
+
 import java.nio.ByteBuffer;
 import java.util.concurrent.TimeUnit;
 
@@ -61,8 +64,15 @@ public class EncodedImage {
 
     public final Integer qp;
 
-    private EncodedImage(ByteBuffer buffer, int encodedWidth, int encodedHeight, long captureTimeNs,
-                         FrameType frameType, int rotation, boolean completeFrame, Integer qp) {
+    public MediaFormat mediaFormat;
+
+    public MediaCodec.BufferInfo bufferInfo;
+
+    public long startTime;
+
+    public EncodedImage(ByteBuffer buffer, int encodedWidth, int encodedHeight, long captureTimeNs,
+                        FrameType frameType, int rotation, boolean completeFrame, Integer qp,
+                        MediaFormat mediaFormat, MediaCodec.BufferInfo bufferInfo) {
         this.buffer = buffer;
         this.encodedWidth = encodedWidth;
         this.encodedHeight = encodedHeight;
@@ -71,6 +81,8 @@ public class EncodedImage {
         this.rotation = rotation;
         this.completeFrame = completeFrame;
         this.qp = qp;
+        this.mediaFormat = mediaFormat;
+        this.bufferInfo = bufferInfo;
     }
 
     public static Builder builder() {
@@ -86,6 +98,8 @@ public class EncodedImage {
         private int rotation;
         private boolean completeFrame;
         private Integer qp;
+        private MediaFormat mediaFormat;
+        private MediaCodec.BufferInfo bufferInfo;
 
         private Builder() {
         }
@@ -136,9 +150,29 @@ public class EncodedImage {
             return this;
         }
 
+        /**
+         * for MediaMuxer
+         * @param bufferInfo
+         * @return
+         */
+        public Builder setBufferInfo(MediaCodec.BufferInfo bufferInfo){
+            this.bufferInfo = bufferInfo;
+            return this;
+        }
+
+        /**
+         * for MediaMuxer
+         * @param mediaFormat
+         * @return
+         */
+        public Builder setMediaFormat(MediaFormat mediaFormat){
+            this.mediaFormat = mediaFormat;
+            return this;
+        }
+
         public EncodedImage createEncodedImage() {
             return new EncodedImage(buffer, encodedWidth, encodedHeight, captureTimeNs, frameType,
-                    rotation, completeFrame, qp);
+                    rotation, completeFrame, qp,mediaFormat,bufferInfo);
         }
     }
 

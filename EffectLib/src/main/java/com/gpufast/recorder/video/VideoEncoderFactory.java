@@ -9,7 +9,8 @@ public interface VideoEncoderFactory {
 
     void setShareContext(EGLContext shareContext);
 
+    VideoCodecInfo[] getSupportedCodecs();
+
     VideoEncoder createEncoder(VideoCodecInfo inputCodecInfo);
 
-    VideoCodecInfo[] getSupportedCodecs();
 }

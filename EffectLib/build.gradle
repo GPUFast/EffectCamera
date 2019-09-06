@@ -33,5 +33,6 @@ android {
 }
 
 dependencies {
-    implementation rootProject.ext.supprot_annotations
+    implementation rootProject.ext.androidx_annotation
+    implementation rootProject.ext.androidx_appcompat
 }

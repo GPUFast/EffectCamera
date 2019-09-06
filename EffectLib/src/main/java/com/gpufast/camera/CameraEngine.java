@@ -4,8 +4,8 @@ import android.os.Build;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 
+import com.gpufast.logger.ELog;
 import com.gpufast.render.Render;
-import com.gpufast.utils.ELog;
 
 /**
  * @author Sivin 2018/10/26
@@ -15,11 +15,11 @@ public class CameraEngine implements SurfaceHolder.Callback {
     private static final String TAG = "CameraEngine";
     private static CameraEngine mInstance = null;
     private ICamera mICamera;
-    //本地预览的surfaceView
-    private SurfaceView mLocalPreview = null;
+    //本地预览的
+    private SurfaceHolder mSurfaceHolder;
     private Render mPreViewRender;
-
-    private Render.FrameCallback mFrameCallback = null;
+    //渲染回调
+    private Render.OnRenderCallback mFrameCallback = null;
 
     private CameraEngine() {
         if (Build.VERSION.SDK_INT > Build.VERSION_CODES.LOLLIPOP) {
@@ -40,29 +40,26 @@ public class CameraEngine implements SurfaceHolder.Callback {
         return mInstance;
     }
 
-    public void setLocalPreview(SurfaceView view) {
-        ELog.i(TAG,"setLocalPreview");
-        mLocalPreview = view;
-        SurfaceHolder holder = mLocalPreview.getHolder();
-        holder.addCallback(this);
+    public void setPreview(SurfaceView view) {
+        ELog.i(TAG, "setPreview");
+        mSurfaceHolder = view.getHolder();
+        mSurfaceHolder.addCallback(this);
     }
 
 
     @Override
     public void surfaceCreated(SurfaceHolder holder) {
-
         mPreViewRender = new Render(holder.getSurface());
-
+        mPreViewRender.setOnRenderCallback(mFrameCallback);
         mPreViewRender.render();
-
         CameraParams params = new CameraParams.Builder()
                 .setWidth(720)
                 .setHeight(1280)
                 .setTexture(mPreViewRender.getVideoTexture())
                 .build();
-        ELog.i(TAG,"setCameraParams");
-        mICamera.setCameraParams(params);
 
+        ELog.i(TAG, "setCameraParams");
+        mICamera.setCameraParams(params);
         mICamera.openCamera(ICamera.CAMERA_FRONT);
     }
 
@@ -82,20 +79,29 @@ public class CameraEngine implements SurfaceHolder.Callback {
      * 切换摄像头
      */
     public void switchCamera() {
-        if(mICamera!= null){
+        if (mICamera != null) {
             mICamera.switchCamera();
         }
     }
 
-    public void setRenderFrameCallback(Render.FrameCallback callback){
-        if(mPreViewRender != null){
-            mPreViewRender.setFrameCallback(callback);
-        }
+    /**
+     * 设置渲染回调
+     *
+     * @param callback callback
+     */
+    public void setRenderFrameCallback(Render.OnRenderCallback callback) {
+        mFrameCallback = callback;
     }
 
-
+    /**
+     * 释放摄像机
+     */
     public void release() {
-        mLocalPreview = null;
+        if (mSurfaceHolder != null) {
+            mSurfaceHolder.removeCallback(this);
+            mSurfaceHolder = null;
+        }
+        mInstance = null;
     }
 
 

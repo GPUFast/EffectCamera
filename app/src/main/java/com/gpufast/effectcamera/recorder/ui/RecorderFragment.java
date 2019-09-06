@@ -48,7 +48,7 @@ public class RecorderFragment extends BaseFragment implements RecorderContract.V
         params.setVideoWidth(720);
         params.setVideoHeight(1280);
         params.setHwEncoder(true);
-        params.setVideoPath(path+"/a_test/test.h264");
+        params.setSavePath(path + "/a_test/test.mp4");
         mPresenter.setRecorderParameter(params);
 
     }
@@ -82,8 +82,19 @@ public class RecorderFragment extends BaseFragment implements RecorderContract.V
                 mPresenter.switchCamera();
                 break;
             case R.id.id_start_recorder_btn:
-                mPresenter.startRecorder();
+                if (mPresenter.isRecording()) {
+                    mPresenter.stopRecorder();
+                } else {
+                    mPresenter.startRecorder();
+                }
                 break;
         }
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        if (mPresenter != null)
+            mPresenter.stopRecorder();
     }
 }

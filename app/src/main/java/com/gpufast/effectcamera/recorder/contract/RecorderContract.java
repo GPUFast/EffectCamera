@@ -39,6 +39,8 @@ public interface RecorderContract {
 
         //合成视频
         void jointVideo();
+
+        boolean isRecording();
     }
 
 
