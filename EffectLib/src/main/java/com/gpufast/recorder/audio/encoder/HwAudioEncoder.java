@@ -97,7 +97,7 @@ public class HwAudioEncoder implements AudioEncoder {
 
             if (encoderCallback != null) {
                 MediaFormat outputFormat = codec.getOutputFormat();
-                encoderCallback.onUpdateAudioFormat(outputFormat);
+                encoderCallback.onUpdateAudioMediaFormat(outputFormat);
             }
             codec.start();
 
