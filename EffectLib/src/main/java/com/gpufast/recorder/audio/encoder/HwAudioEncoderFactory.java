@@ -1,6 +1,7 @@
 package com.gpufast.recorder.audio.encoder;
 
 import android.media.MediaCodecInfo;
+import android.media.MediaCodecList;
 
 import com.gpufast.logger.ELog;
 import com.gpufast.recorder.hardware.MediaCodecWrapperFactoryImpl;
@@ -24,9 +25,32 @@ public class HwAudioEncoderFactory implements AudioEncoderFactory {
     }
 
     private MediaCodecInfo findCodecForType(AudioCodecType type) {
-
-
+        for (int i = 0; i < MediaCodecList.getCodecCount(); ++i) {
+            MediaCodecInfo info = null;
+            try {
+                info = MediaCodecList.getCodecInfoAt(i);
+            } catch (IllegalArgumentException e) {
+                ELog.e(TAG, "Cannot retrieve encoder codec info:" + e);
+            }
+            if (info == null || !info.isEncoder()) {
+                continue;
+            }
+            if (codecSupportsType(info, type)) {
+                return info;
+            }
+        }
+        ELog.e(TAG, "Cannot retrieve audio encoder codec.");
         return null;
+    }
+
+
+    private boolean codecSupportsType(MediaCodecInfo info, AudioCodecType type) {
+        for (String mimeType : info.getSupportedTypes()) {
+            if (type.mimeType().equals(mimeType)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override
