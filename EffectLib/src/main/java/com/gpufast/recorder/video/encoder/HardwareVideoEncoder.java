@@ -109,7 +109,7 @@ class HardwareVideoEncoder implements VideoEncoder {
     // exit when the encoder stops.
     private volatile boolean running;
     // Any exception thrown during shutdown.  The output thread releases the MediaCodec and uses this
-    // value to send exceptions thrown during release back to the encoder thread.
+    // value to send exceptions thrown during deInit back to the encoder thread.
     private volatile Exception shutdownException;
 
     private long startTime;
@@ -143,7 +143,7 @@ class HardwareVideoEncoder implements VideoEncoder {
     }
 
     @Override
-    public VideoCodecStatus initEncoder(Settings settings, VideoEncoderCallback callback) {
+    public VideoCodecStatus init(Settings settings, VideoEncoderCallback callback) {
         encodeThreadChecker.checkIsOnValidThread();
         this.encoderCallback = callback;
         this.width = settings.width;
@@ -156,7 +156,7 @@ class HardwareVideoEncoder implements VideoEncoder {
         adjustedBitrate = bitrateAdjuster.getAdjustedBitrateBps();
 
         ELog.i(TAG,
-                "initEncoder: " + width + " x " + height + ". @ " + settings.startBitrate
+                "init: " + width + " x " + height + ". @ " + settings.startBitrate
                         + "kbps. Fps: " + settings.maxFrameRate);
 
         return initEncodeInternal();
@@ -223,7 +223,7 @@ class HardwareVideoEncoder implements VideoEncoder {
 
         } catch (IllegalStateException e) {
             ELog.e(TAG, "initEncodeInternal failed:" + e.getLocalizedMessage());
-            release();
+            deInit();
             return VideoCodecStatus.FALLBACK_SOFTWARE;
         }
         running = true;
@@ -305,7 +305,7 @@ class HardwareVideoEncoder implements VideoEncoder {
      */
     private VideoCodecStatus resetCodec(int newWidth, int newHeight) {
         encodeThreadChecker.checkIsOnValidThread();
-        VideoCodecStatus status = release();
+        VideoCodecStatus status = deInit();
         if (status != VideoCodecStatus.OK) {
             return status;
         }
@@ -414,7 +414,7 @@ class HardwareVideoEncoder implements VideoEncoder {
         try {
             codec.release();
         } catch (Exception e) {
-            ELog.e(TAG, "Media encoder release failed:" + e.getLocalizedMessage());
+            ELog.e(TAG, "Media encoder deInit failed:" + e.getLocalizedMessage());
             shutdownException = e;
         }
         configBuffer = null;
@@ -436,7 +436,7 @@ class HardwareVideoEncoder implements VideoEncoder {
     }
 
     @Override
-    public VideoCodecStatus release() {
+    public VideoCodecStatus deInit() {
         encodeThreadChecker.checkIsOnValidThread();
         final VideoCodecStatus returnValue;
         if (outputThread == null) {
@@ -445,11 +445,11 @@ class HardwareVideoEncoder implements VideoEncoder {
             // The outputThread actually stops and releases the codec once running is false.
             running = false;
             if (!ThreadUtils.joinUninterruptibly(outputThread, MEDIA_CODEC_RELEASE_TIMEOUT_MS)) {
-                ELog.e(TAG, "Media encoder release timeout");
+                ELog.e(TAG, "Media encoder deInit timeout");
                 returnValue = VideoCodecStatus.TIMEOUT;
             } else if (shutdownException != null) {
                 // Log the exception and turn it into an error.
-                ELog.e(TAG, "Media encoder release exception:" + shutdownException.getLocalizedMessage());
+                ELog.e(TAG, "Media encoder deInit exception:" + shutdownException.getLocalizedMessage());
                 returnValue = VideoCodecStatus.ERROR;
             } else {
                 returnValue = VideoCodecStatus.OK;
@@ -472,7 +472,7 @@ class HardwareVideoEncoder implements VideoEncoder {
         codec = null;
         outputThread = null;
 
-        // Allow changing thread after release.
+        // Allow changing thread after deInit.
         encodeThreadChecker.detachThread();
         return returnValue;
     }

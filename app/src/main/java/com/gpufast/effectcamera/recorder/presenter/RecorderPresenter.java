@@ -7,7 +7,7 @@ import com.gpufast.camera.CameraEngine;
 import com.gpufast.effectcamera.recorder.contract.RecorderContract;
 import com.gpufast.logger.ELog;
 import com.gpufast.recorder.RecorderEngine;
-import com.gpufast.recorder.RecorderParams;
+import com.gpufast.recorder.RecordParams;
 import com.gpufast.recorder.audio.AudioFrame;
 import com.gpufast.recorder.audio.AudioProcessor;
 import com.gpufast.render.Render;
@@ -59,7 +59,7 @@ public class RecorderPresenter implements RecorderContract.Presenter, Render.OnR
 
 
     @Override
-    public void setRecorderParameter(RecorderParams params) {
+    public void setRecorderParameter(RecordParams params) {
         RecorderEngine.setParams(params);
     }
 

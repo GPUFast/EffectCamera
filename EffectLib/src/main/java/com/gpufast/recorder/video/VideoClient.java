@@ -22,6 +22,7 @@ public class VideoClient {
     public VideoClient(VideoEncoder encoder,
                        VideoEncoder.Settings settings,
                        VideoEncoder.VideoEncoderCallback callback) {
+
         mEncoderThread = new EncoderThread(encoder, settings, callback);
         pTime = new PresentationTime(settings.maxFrameRate);
     }
@@ -36,21 +37,20 @@ public class VideoClient {
 
     public void sendVideoFrame(int textureId, int srcWidth, int srcHeight) {
         if (mEncoderThread != null && mEncoderThread.isReady()) {
+
             pTime.record();
+
             VideoFrame videoFrame = new VideoFrame(
                     new TextureBufferImpl(textureId, srcWidth,
                             srcHeight, VideoFrame.TextureBuffer.TextureType.RGB),
                     0, pTime.presentationTimeNs);
+
             mEncoderThread.getHandler().sendVideoFrame(videoFrame);
         }
     }
 
     public void stop() {
         mEncoderThread.getHandler().sendToStop();
-    }
-
-    public void release() {
-
     }
 
     private static class EncoderThread extends Thread {
@@ -104,27 +104,26 @@ public class VideoClient {
 
         private void initEncoder() {
             if (mVideoEncoder != null) {
-                mVideoEncoder.initEncoder(mSettings, mCallback);
+                mVideoEncoder.init(mSettings, mCallback);
             }
         }
-        private void deInitEncoder() {
-            if (mVideoEncoder != null) {
-                mVideoEncoder.release();
-                mVideoEncoder = null;
-            }
-        }
+
         void sendVideoFrame(VideoFrame frame) {
             if (mVideoEncoder != null && mReady) {
                 mVideoEncoder.encode(frame);
             }
         }
 
-        /**
-         * 必须在当前线程调用
-         */
         private void shutdown() {
             ELog.d(TAG, "shutdown");
             Looper.myLooper().quit();
+        }
+
+        private void deInitEncoder() {
+            if (mVideoEncoder != null) {
+                mVideoEncoder.deInit();
+                mVideoEncoder = null;
+            }
         }
     }
 
