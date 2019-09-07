@@ -84,9 +84,7 @@ public class Mp4Muxer extends IMediaMuxer {
     }
 
     private void start() {
-        if (mediaMuxerStarted) {
-            return;
-        }
+        if (mediaMuxerStarted) return;
         synchronized (Mp4Muxer.class) {
             if (!mediaMuxerStarted) {
                 mediaMuxerStarted = true;
