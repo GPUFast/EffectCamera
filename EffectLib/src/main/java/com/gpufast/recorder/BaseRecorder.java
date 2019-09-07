@@ -3,8 +3,13 @@ package com.gpufast.recorder;
 import android.opengl.EGLContext;
 
 import com.gpufast.logger.ELog;
+import com.gpufast.recorder.audio.AudioClient;
 import com.gpufast.recorder.audio.AudioProcessor;
-import com.gpufast.recorder.muxer.MediaMuxer;
+import com.gpufast.recorder.audio.AudioSetting;
+import com.gpufast.recorder.audio.encoder.AudioCodecInfo;
+import com.gpufast.recorder.audio.encoder.AudioEncoder;
+import com.gpufast.recorder.audio.encoder.AudioEncoderFactory;
+import com.gpufast.recorder.muxer.IMediaMuxer;
 import com.gpufast.recorder.video.EncoderType;
 import com.gpufast.recorder.video.VideoClient;
 import com.gpufast.recorder.video.VideoEncoder;
@@ -14,57 +19,102 @@ import com.gpufast.recorder.video.encoder.VideoCodecInfo;
 public abstract class BaseRecorder implements IRecorder {
     private static final String TAG = "BaseRecorder";
 
-    //视频录制参数
-    private RecorderParams recorderParams;
 
-    //EGL上下文，使用openGL编码时需要
     private EGLContext shareContext;
-    //视频编码器factory
+
     private VideoEncoderFactory videoEncoderFactory;
-    //编码视频的设置
+
+    private VideoCodecInfo videoCodecInfo;
+
     private VideoEncoder.Settings videoSettings;
 
-    //视频编码客户端
-    private VideoClient mVideoClient;
 
-    //封装器
-    private MediaMuxer mMuxer;
+    private AudioSetting audioSetting;
 
-    protected AudioProcessor mAudioFrameCallback;
+    private AudioEncoderFactory audioEncoderFactory;
+
+    private AudioCodecInfo audioCodecInfo;
 
 
-    private void initRecorder() {
-        if (recorderParams.isHwEncoder()) {
-            videoEncoderFactory = EncoderFactory.getVideoEncoderFactory(EncoderType.HW_VIDEO_ENCODER);
-        } else {
-            videoEncoderFactory = EncoderFactory.getVideoEncoderFactory(EncoderType.HW_VIDEO_ENCODER);
-        }
+    AudioProcessor mAudioFrameCallback;
 
-        if (videoEncoderFactory == null) {
-            ELog.e(TAG, "can't find a available video encoder factory");
-            return;
-        }
-
-        //设置EGL上下文
-        if (shareContext != null) {
-            videoEncoderFactory.setShareContext(shareContext);
-        }
-
-        VideoCodecInfo videoCodecInfo = null;
-        //配置视频编码器信息
-        VideoCodecInfo[] supportedCodecs = videoEncoderFactory.getSupportedCodecs();
-        //设置视频编码器信息
-        if (supportedCodecs != null && supportedCodecs.length > 0) {
-            videoCodecInfo = supportedCodecs[0];
-            ELog.d(TAG, "find a codec :" + videoCodecInfo.name);
-        } else {
-            ELog.e(TAG, "don't find a available codec :");
-        }
-    }
 
     @Override
     public void setAudioProcessor(AudioProcessor callback) {
         mAudioFrameCallback = callback;
     }
 
+
+    /**
+     * 初始化视频录音器
+     *
+     * @param params 录音器参数
+     */
+    void initVideoRecorder(RecordParams params) {
+        videoSettings = new VideoEncoder.Settings(params.getVideoWidth(),
+                params.getVideoHeight(), params.getVideoBitrate(), params.getVideoFrameRate());
+
+        if (params.isEnableHwEncoder()) {
+            videoEncoderFactory = EncoderFactory.getVideoEncoderFactory(EncoderType.HW_VIDEO_ENCODER);
+        } else {
+            videoEncoderFactory = EncoderFactory.getVideoEncoderFactory(EncoderType.SW_VIDEO_ENCODER);
+        }
+        if (videoEncoderFactory != null) {
+            if (shareContext != null) {
+                videoEncoderFactory.setShareContext(shareContext);
+            }
+            VideoCodecInfo[] supportedCodecs = videoEncoderFactory.getSupportedCodecs();
+            if (supportedCodecs != null && supportedCodecs.length > 0) {
+                videoCodecInfo = supportedCodecs[0];
+                ELog.d(TAG, "find a codec :" + videoCodecInfo.name);
+            } else {
+                ELog.e(TAG, "can't find a available codec :");
+            }
+        }
+    }
+
+
+    void setEGLShareContext(EGLContext context) {
+        shareContext = context;
+        if (videoEncoderFactory != null) {
+            videoEncoderFactory.setShareContext(shareContext);
+        }
+    }
+
+    VideoClient createVideoClient(IMediaMuxer muxer) {
+        if (videoEncoderFactory != null && videoCodecInfo != null) {
+            VideoEncoder videoEncoder = videoEncoderFactory.createEncoder(videoCodecInfo);
+            if (videoEncoder != null) {
+                return new VideoClient(videoEncoder, videoSettings, muxer);
+            }
+            ELog.e(TAG, "can't create video encoder.");
+        }
+        ELog.e(TAG, "create video client failed.");
+        return null;
+    }
+
+
+    void initAudioRecorder(RecordParams params) {
+        audioSetting = new AudioSetting(params.getAudioSampleRate(), params.getAudioBitrate());
+        if (params.isEnableHwEncoder()) {
+            audioEncoderFactory = EncoderFactory.getAudioEncoder(EncoderType.HW_AUDIO_ENCODER);
+        } else {
+            audioEncoderFactory = EncoderFactory.getAudioEncoder(EncoderType.SW_AUDIO_ENCODER);
+        }
+        if (audioEncoderFactory != null) {
+            audioCodecInfo = audioEncoderFactory.getSupportCodecInfo();
+        }
+    }
+
+    AudioClient createAudioClient(IMediaMuxer muxer) {
+        if (audioEncoderFactory != null && audioCodecInfo != null) {
+            AudioEncoder audioEncoder = audioEncoderFactory.createEncoder(audioCodecInfo);
+            if (audioEncoder != null) {
+                return new AudioClient(audioEncoder, audioSetting, muxer);
+            }
+            ELog.e(TAG, "create audio encoder");
+        }
+        ELog.e(TAG, "create audio client failed.");
+        return null;
+    }
 }

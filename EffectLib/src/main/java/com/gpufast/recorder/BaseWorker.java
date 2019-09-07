@@ -9,9 +9,6 @@ public abstract class BaseWorker implements IRecorder {
 
     protected static abstract class BaseWorkerThread extends Thread implements IRecorder{
 
-        @Override
-        public void setShareContext(EGLContext shareContext) {
-        }
 
         @Override
         public void sendVideoFrame(int textureId, int srcWidth, int srcHeight) {
@@ -26,16 +23,12 @@ public abstract class BaseWorker implements IRecorder {
 
         }
 
-
-
     }
 
 
     protected static abstract class BaseWorkerHandler extends Handler implements IRecorder{
 
-        @Override
-        public void setShareContext(EGLContext shareContext) {
-        }
+
 
         @Override
         public void sendVideoFrame(int textureId, int srcWidth, int srcHeight) {

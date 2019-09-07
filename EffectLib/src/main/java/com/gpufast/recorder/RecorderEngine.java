@@ -23,7 +23,7 @@ public class RecorderEngine {
      * 设置录制参数
      * @param params 参数
      */
-    public static void setParams(RecorderParams params) {
+    public static void setParams(RecordParams params) {
         create().setParams(params);
     }
 

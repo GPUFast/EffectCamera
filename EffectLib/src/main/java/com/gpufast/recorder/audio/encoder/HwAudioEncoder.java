@@ -64,7 +64,7 @@ public class HwAudioEncoder implements AudioEncoder {
 
 
     @Override
-    public AudioCodecStatus initEncoder(AudioEncoder.Settings settings, AudioEncoderCallback callback) {
+    public AudioCodecStatus init(AudioEncoder.Settings settings, AudioEncoderCallback callback) {
         checker.checkIsOnValidThread();
 
         if (settings == null) {
@@ -80,7 +80,7 @@ public class HwAudioEncoder implements AudioEncoder {
         }
 
 
-        ELog.e(TAG, "initEncoder bitrate = " + settings.bitrate + " sample rate = " + settings.sampleRate +
+        ELog.e(TAG, "init bitrate = " + settings.bitrate + " sample rate = " + settings.sampleRate +
                 " mimeType = " + codecType.mimeType());
 
         try {
@@ -102,7 +102,7 @@ public class HwAudioEncoder implements AudioEncoder {
             codec.start();
 
         } catch (IllegalStateException e) {
-            ELog.e(TAG, "initEncoder failed:" + e.getLocalizedMessage());
+            ELog.e(TAG, "init failed:" + e.getLocalizedMessage());
             release();
             return AudioCodecStatus.FALLBACK_SOFTWARE;
         }
@@ -111,7 +111,7 @@ public class HwAudioEncoder implements AudioEncoder {
     }
 
     @Override
-    public void encodePcm(AudioFrame frame) {
+    public void encode(AudioFrame frame) {
 
         checker.checkIsOnValidThread();
 

@@ -9,9 +9,9 @@ public interface IRecorder {
     /**
      * Set the video recording parameter
      *
-     * @param params {@linkplain RecorderParams}
+     * @param params {@linkplain RecordParams}
      */
-    void setParams(RecorderParams params);
+    void setParams(RecordParams params);
 
     /**
      * 设置EGL共享上下文

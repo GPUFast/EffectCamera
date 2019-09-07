@@ -29,13 +29,13 @@ public interface VideoEncoder {
     }
 
     //初始化编码器
-    VideoCodecStatus initEncoder(Settings settings, VideoEncoderCallback encodeCallback);
+    VideoCodecStatus init(Settings settings, VideoEncoderCallback encodeCallback);
 
     VideoCodecStatus encode(VideoFrame frame);
 
     String getImplementationName();
 
-    VideoCodecStatus release();
+    VideoCodecStatus deInit();
 
     interface VideoEncoderCallback {
 

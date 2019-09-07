@@ -142,13 +142,13 @@ public class AudioClient implements AudioCollector.OnAudioFrameCallback {
 
         private void initEncoder() {
             if (mAudioEncoder != null) {
-                mAudioEncoder.initEncoder(mSettings, mCallback);
+                mAudioEncoder.init(mSettings, mCallback);
             }
         }
 
         void sendAudioFrame(AudioFrame frame) {
             if (mAudioEncoder != null && mReady) {
-                mAudioEncoder.encodePcm(frame);
+                mAudioEncoder.encode(frame);
             }
         }
 

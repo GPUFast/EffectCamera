@@ -5,18 +5,22 @@ import android.view.SurfaceView;
 import android.view.View;
 import android.widget.ImageView;
 
+import androidx.appcompat.app.AlertDialog;
+
 import com.gpufast.effectcamera.BaseFragment;
 import com.gpufast.effectcamera.R;
 import com.gpufast.effectcamera.recorder.contract.RecorderContract;
 import com.gpufast.effectcamera.recorder.presenter.RecorderPresenter;
-import com.gpufast.recorder.RecorderParams;
+import com.gpufast.recorder.RecordParams;
+
+import java.util.Objects;
 
 public class RecorderFragment extends BaseFragment implements RecorderContract.View, View.OnClickListener {
     private static final String TAG = "RecorderFragment";
     private SurfaceView mPreview;
     private RecorderPresenter mPresenter;
-    private ImageView mSwitchCameraBtn;
     private ImageView mStartRecorderBtn;
+    private ImageView mSwitchCameraBtn;
 
 
     @Override
@@ -28,14 +32,13 @@ public class RecorderFragment extends BaseFragment implements RecorderContract.V
     protected void onInitView() {
         mPreview = findViewById(R.id.id_camera_preview);
         mSwitchCameraBtn = findViewById(R.id.id_switch_camera);
-        mSwitchCameraBtn.setOnClickListener(this);
         mStartRecorderBtn = findViewById(R.id.id_start_recorder_btn);
-        mStartRecorderBtn.setOnClickListener(this);
+
+        Objects.requireNonNull(mSwitchCameraBtn).setOnClickListener(this);
+        Objects.requireNonNull(mStartRecorderBtn).setOnClickListener(this);
+
         mPresenter = new RecorderPresenter();
-
         initRecorderParams();
-
-
         mPresenter.attachView(this);
         mPresenter.init();
     }
@@ -44,13 +47,13 @@ public class RecorderFragment extends BaseFragment implements RecorderContract.V
 
         String path = Environment.getExternalStorageDirectory().getAbsolutePath();
 
-        RecorderParams params = new RecorderParams();
-        params.setVideoWidth(720);
-        params.setVideoHeight(1280);
-        params.setHwEncoder(true);
-        params.setSavePath(path + "/a_test/test.mp4");
-        mPresenter.setRecorderParameter(params);
-
+        RecordParams.Builder builder = new RecordParams.Builder();
+        builder.setVideoWidth(720)
+                .setVideoHeight(1280)
+                .setEnableHwEncoder(true)
+                .setEnableVideo(true)
+                .setSavePath(path + "/a_test/test.mp4");
+        mPresenter.setRecorderParameter(builder.build());
     }
 
 

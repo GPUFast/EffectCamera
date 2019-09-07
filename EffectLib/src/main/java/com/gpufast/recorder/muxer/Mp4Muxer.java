@@ -5,16 +5,14 @@ import android.media.MediaMuxer;
 
 import com.gpufast.logger.ELog;
 import com.gpufast.recorder.audio.EncodedAudio;
-import com.gpufast.recorder.audio.encoder.AudioEncoder;
 import com.gpufast.recorder.video.EncodedImage;
-import com.gpufast.recorder.video.VideoEncoder;
 
 import java.io.IOException;
 
 /**
  * 视频合成接口
  */
-public class Mp4Muxer implements VideoEncoder.VideoEncoderCallback, AudioEncoder.AudioEncoderCallback {
+public class Mp4Muxer extends IMediaMuxer {
     private static final String TAG = Mp4Muxer.class.getSimpleName();
     private MediaMuxer mMediaMuxer;
     private int audioTrackIndex = -1;
@@ -23,20 +21,27 @@ public class Mp4Muxer implements VideoEncoder.VideoEncoderCallback, AudioEncoder
     private boolean mediaMuxerStarted = false;
     private boolean videoTrackHasReady = false;
     private boolean audioTrackHasRead = false;
-
     private boolean hasRelease = false;
 
-    public Mp4Muxer(String outputPath) {
+    private boolean enableVideo;
+    private boolean enableAudio;
+
+    Mp4Muxer(Setting setting) {
+        if (setting == null) {
+            throw new IllegalArgumentException("setting is null object");
+        }
+        enableAudio = setting.enableAudio;
+        enableVideo = setting.enableVideo;
         try {
-            mMediaMuxer = new MediaMuxer(outputPath, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4);
+            mMediaMuxer = new MediaMuxer(setting.savePath, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4);
         } catch (IOException e) {
-            ELog.e(TAG, "Init MediaMuxer:" + e.getMessage());
+            ELog.e(TAG, "Init IMediaMuxer:" + e.getMessage());
         }
     }
 
     @Override
     public void onUpdateVideoMediaFormat(MediaFormat format) {
-        if (videoTrackHasReady || hasRelease) return;
+        if (!enableVideo || videoTrackHasReady || hasRelease) return;
         ELog.i(TAG, "onUpdateVideoMediaFormat:" + format);
         videoTrackIndex = mMediaMuxer.addTrack(format);
         if (videoTrackIndex < 0) {
@@ -49,7 +54,7 @@ public class Mp4Muxer implements VideoEncoder.VideoEncoderCallback, AudioEncoder
 
     @Override
     public void onUpdateAudioMediaFormat(MediaFormat mediaFormat) {
-        if (audioTrackHasRead || hasRelease) return;
+        if (!enableAudio || audioTrackHasRead || hasRelease) return;
         ELog.i(TAG, "onUpdateAudioMediaFormat");
         audioTrackIndex = mMediaMuxer.addTrack(mediaFormat);
         if (audioTrackIndex < 0) {
@@ -61,7 +66,7 @@ public class Mp4Muxer implements VideoEncoder.VideoEncoderCallback, AudioEncoder
 
     @Override
     public void onEncodedFrame(EncodedImage frame) {
-        if (videoTrackHasReady) {
+        if ((videoTrackHasReady && !enableAudio) || (videoTrackHasReady && audioTrackHasRead)) {
             start();
             mMediaMuxer.writeSampleData(videoTrackIndex, frame.buffer, frame.bufferInfo);
             ELog.i(TAG, "Write video data ，time=" + frame.bufferInfo.presentationTimeUs);
@@ -71,7 +76,7 @@ public class Mp4Muxer implements VideoEncoder.VideoEncoderCallback, AudioEncoder
 
     @Override
     public void onEncodedAudio(EncodedAudio frame) {
-        if (videoTrackHasReady && audioTrackHasRead) {
+        if ((audioTrackHasRead && !enableVideo) || (audioTrackHasRead && videoTrackHasReady)) {
             start();
             mMediaMuxer.writeSampleData(audioTrackIndex, frame.mBuffer, frame.mBufferInfo);
             ELog.i(TAG, "Write audio data，time=" + frame.mBufferInfo.presentationTimeUs);
@@ -91,13 +96,13 @@ public class Mp4Muxer implements VideoEncoder.VideoEncoderCallback, AudioEncoder
     }
 
     public void release() {
-        ELog.i(TAG, "Release MediaMuxer");
+        ELog.i(TAG, "Release IMediaMuxer");
         try {
             if (mMediaMuxer != null) {
                 mMediaMuxer.release();
             }
         } catch (Exception e) {
-            ELog.e(TAG, "Release MediaMuxer:" + e.getMessage());
+            ELog.e(TAG, "Release IMediaMuxer:" + e.getMessage());
         }
         hasRelease = true;
         videoTrackIndex = -1;
