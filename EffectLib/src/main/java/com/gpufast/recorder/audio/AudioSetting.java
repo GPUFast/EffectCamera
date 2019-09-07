@@ -1,5 +1,8 @@
 package com.gpufast.recorder.audio;
 
+/**
+ * 音频采集参数，编码参数设置类
+ */
 public class AudioSetting {
     final int bitrate; // Kilobits per second.
     final int sampleRate;

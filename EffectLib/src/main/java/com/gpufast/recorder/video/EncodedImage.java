@@ -151,7 +151,7 @@ public class EncodedImage {
         }
 
         /**
-         * for MediaMuxer
+         * for IMediaMuxer
          * @param bufferInfo
          * @return
          */

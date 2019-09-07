@@ -24,7 +24,7 @@ class Worker extends BaseWorker {
     }
 
     @Override
-    public void setParams(RecorderParams params) {
+    public void setParams(RecordParams params) {
         if (mWorkHandler != null) {
             mWorkHandler.setParams(params);
         }
@@ -33,8 +33,8 @@ class Worker extends BaseWorker {
     @Override
     public void setShareContext(EGLContext shareContext) {
         //不用转发到同一个线程
-        if (recorder != null) {
-            recorder.setShareContext(shareContext);
+        if (mWorkHandler != null) {
+            mWorkHandler.setShareContext(shareContext);
         }
     }
 
@@ -119,9 +119,16 @@ class Worker extends BaseWorker {
         }
 
         @Override
-        public void setParams(RecorderParams params) {
+        public void setParams(RecordParams params) {
             if (mRecorder != null) {
                 mRecorder.setParams(params);
+            }
+        }
+
+        @Override
+        public void setShareContext(EGLContext shareContext) {
+            if(mRecorder != null){
+                mRecorder.setShareContext(shareContext);
             }
         }
 
@@ -190,10 +197,11 @@ class Worker extends BaseWorker {
     private static class WorkerHandler extends BaseWorkerHandler {
 
         private static final int MSG_SET_PARAMS = 1;
-        private static final int MSG_START_RECORDER = 2;
-        private static final int MSG_STOP_RECORDER = 3;
-        private static final int MSG_JOINT_VIDEO = 4;
-        private static final int MSG_RELEASE = 5;
+        private static final int MSG_SET_EGL_CONTEXT = 2;
+        private static final int MSG_START_RECORDER = 3;
+        private static final int MSG_STOP_RECORDER = 4;
+        private static final int MSG_JOINT_VIDEO = 5;
+        private static final int MSG_RELEASE = 6;
 
         private WeakReference<WorkerThread> mWeakWorkThread;
 
@@ -202,8 +210,13 @@ class Worker extends BaseWorker {
         }
 
         @Override
-        public void setParams(RecorderParams params) {
+        public void setParams(RecordParams params) {
             sendMessage(obtainMessage(MSG_SET_PARAMS,params));
+        }
+
+        @Override
+        public void setShareContext(EGLContext shareContext) {
+            sendMessage(obtainMessage(MSG_SET_EGL_CONTEXT,shareContext));
         }
 
         @Override
@@ -232,7 +245,10 @@ class Worker extends BaseWorker {
             if (workerThread == null) return;
             switch (msg.what) {
                 case MSG_SET_PARAMS:
-                    workerThread.setParams((RecorderParams) msg.obj);
+                    workerThread.setParams((RecordParams) msg.obj);
+                    break;
+                case MSG_SET_EGL_CONTEXT:
+                    workerThread.setShareContext((EGLContext) msg.obj);
                     break;
                 case MSG_START_RECORDER:
                     workerThread.startRecorder();

@@ -17,9 +17,9 @@ public interface AudioEncoder {
         }
     }
 
-    AudioCodecStatus initEncoder(AudioEncoder.Settings settings, AudioEncoderCallback callback);
+    AudioCodecStatus init(AudioEncoder.Settings settings, AudioEncoderCallback callback);
 
-    void encodePcm(AudioFrame frame);
+    void encode(AudioFrame frame);
 
     void release();
 
