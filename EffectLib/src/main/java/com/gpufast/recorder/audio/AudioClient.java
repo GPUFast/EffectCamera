@@ -12,7 +12,7 @@ import java.lang.ref.WeakReference;
 public class AudioClient implements AudioCollector.OnAudioFrameCallback {
 
     //音频编码线程
-    private EncoderThread mEncoderThread;
+    private AudioEncoderThread mEncoderThread;
 
     private EncoderHandler mEncoderHandler;
 
@@ -26,15 +26,11 @@ public class AudioClient implements AudioCollector.OnAudioFrameCallback {
     public AudioClient(AudioEncoder encoder,
                        AudioSetting settings,
                        AudioEncoder.AudioEncoderCallback callback) {
-
-        if(encoder == null || settings == null) return;
-
-        mEncoderThread = new EncoderThread(encoder,
-                new AudioEncoder.Settings(settings.getSampleRate(),settings.getBitrate()),
-                callback);
+        if (encoder == null || settings == null) return;
 
         mAudioCollector = new AudioCollector();
-        mAudioCollector.init(new AudioCollector.Settings(settings.getSampleRate()),this);
+        mAudioCollector.init(settings, this);
+        mEncoderThread = new AudioEncoderThread(encoder, settings, callback);
     }
 
 
@@ -51,11 +47,12 @@ public class AudioClient implements AudioCollector.OnAudioFrameCallback {
      * 停止编码线程
      */
     public void stop() {
-        if (mEncoderHandler != null) {
-            mEncoderHandler.sendToStop();
-        }
-        if(mAudioCollector != null){
+        if (mAudioCollector != null) {
             mAudioCollector.stop();
+        }
+        if (mEncoderHandler != null && mEncoderThread.mReady) {
+            mEncoderHandler.stop();
+            mEncoderThread.waitUntilStop();
         }
     }
 
@@ -84,37 +81,30 @@ public class AudioClient implements AudioCollector.OnAudioFrameCallback {
         if (newFrame != null) {
             frame = newFrame;
         }
-        //编码音频
-        mEncoderThread.getHandler().sendAudioFrame(frame);
+        if (mEncoderThread.mReady) {
+            mEncoderThread.getHandler().sendAudioFrame(frame);
+        }
     }
 
 
-    private static class EncoderThread extends Thread {
-        private static final String TAG = EncoderThread.class.getSimpleName();
+    private static class AudioEncoderThread extends Thread {
+        private static final String TAG = AudioEncoderThread.class.getSimpleName();
         private final Object mStartLock = new Object();
-        private boolean mReady = false;
+        private volatile boolean mReady = false;
         private EncoderHandler mEncoderHandler;
 
 
         private AudioEncoder mAudioEncoder;
-        private AudioEncoder.Settings mSettings;
+        private AudioSetting mSettings;
 
         AudioEncoder.AudioEncoderCallback mCallback;
 
-        EncoderThread(AudioEncoder encoder, AudioEncoder.Settings settings,
-                      AudioEncoder.AudioEncoderCallback callback) {
+        AudioEncoderThread(AudioEncoder encoder, AudioSetting settings,
+                           AudioEncoder.AudioEncoderCallback callback) {
             super("audio_Encoder_Thread");
             mAudioEncoder = encoder;
             mSettings = settings;
             mCallback = callback;
-        }
-
-        boolean isReady() {
-            return mReady;
-        }
-
-        EncoderHandler getHandler() {
-            return mEncoderHandler;
         }
 
         @Override
@@ -128,11 +118,26 @@ public class AudioClient implements AudioCollector.OnAudioFrameCallback {
             }
             Looper.loop();
             release();
+            synchronized (mStartLock) {
+                mReady = false;
+                mStartLock.notify();
+            }
+            ELog.i(TAG, "audio encoder thread quit.");
         }
 
         void waitUntilReady() {
             synchronized (mStartLock) {
                 while (!mReady) {
+                    try {
+                        mStartLock.wait();
+                    } catch (InterruptedException e) { /* not expected */ }
+                }
+            }
+        }
+
+        void waitUntilStop() {
+            synchronized (mStartLock) {
+                while (mReady) {
                     try {
                         mStartLock.wait();
                     } catch (InterruptedException e) { /* not expected */ }
@@ -152,11 +157,11 @@ public class AudioClient implements AudioCollector.OnAudioFrameCallback {
             }
         }
 
-        /**
-         * 必须在当前线程调用
-         */
+        EncoderHandler getHandler() {
+            return mEncoderHandler;
+        }
+
         private void shutdown() {
-            ELog.d(TAG, "shutdown");
             Looper.myLooper().quit();
         }
 
@@ -173,37 +178,36 @@ public class AudioClient implements AudioCollector.OnAudioFrameCallback {
 
         private static final String TAG = EncoderHandler.class.getSimpleName();
 
-        private static final int ON_FRAME_AVAILABLE = 0x001;
-        private static final int ON_STOP = 0x002;
+        private static final int MSG_FRAME_AVAILABLE = 0x001;
+        private static final int MSG_STOP = 0x002;
 
-        private WeakReference<AudioClient.EncoderThread> mWeakEncoderThread;
+        private WeakReference<AudioClient.AudioEncoderThread> mWeakEncoderThread;
 
-        EncoderHandler(EncoderThread thread) {
+        EncoderHandler(AudioEncoderThread thread) {
             mWeakEncoderThread = new WeakReference<>(thread);
         }
 
 
         void sendAudioFrame(AudioFrame frame) {
-            sendMessage(obtainMessage(ON_FRAME_AVAILABLE, frame));
+            sendMessage(obtainMessage(MSG_FRAME_AVAILABLE, frame));
         }
 
-        private void sendToStop() {
-            sendMessage(obtainMessage(ON_STOP));
+        private void stop() {
+            sendMessage(obtainMessage(MSG_STOP));
         }
 
         @Override
         public void handleMessage(Message msg) {
-
-            EncoderThread encoderThread = mWeakEncoderThread.get();
+            AudioEncoderThread encoderThread = mWeakEncoderThread.get();
             if (encoderThread == null) {
                 ELog.e(TAG, "mWeakEncoderThread.get() == null");
                 return;
             }
             switch (msg.what) {
-                case ON_FRAME_AVAILABLE:
+                case MSG_FRAME_AVAILABLE:
                     encoderThread.sendAudioFrame((AudioFrame) msg.obj);
                     break;
-                case ON_STOP:
+                case MSG_STOP:
                     encoderThread.shutdown();
                     break;
             }
