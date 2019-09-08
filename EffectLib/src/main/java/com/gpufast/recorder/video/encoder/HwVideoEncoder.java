@@ -107,7 +107,7 @@ class HwVideoEncoder implements VideoEncoder {
     // Any exception thrown during shutdown.  The output thread releases the MediaCodec and uses this
     // value to send exceptions thrown during deInit back to the encoder thread.
     private volatile Exception shutdownException;
-
+    //将要编码的序列号，用来检测丢帧
     private int frameIndex = 0;
 
     /**
