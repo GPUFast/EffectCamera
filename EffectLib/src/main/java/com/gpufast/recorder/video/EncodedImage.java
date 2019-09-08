@@ -70,9 +70,11 @@ public class EncodedImage {
 
     public long startTime;
 
-    public EncodedImage(ByteBuffer buffer, int encodedWidth, int encodedHeight, long captureTimeNs,
-                        FrameType frameType, int rotation, boolean completeFrame, Integer qp,
-                        MediaFormat mediaFormat, MediaCodec.BufferInfo bufferInfo) {
+    public int index = 0;
+
+    private EncodedImage(ByteBuffer buffer, int encodedWidth, int encodedHeight, long captureTimeNs,
+                         FrameType frameType, int rotation, boolean completeFrame, Integer qp,
+                         MediaFormat mediaFormat, MediaCodec.BufferInfo bufferInfo , int index) {
         this.buffer = buffer;
         this.encodedWidth = encodedWidth;
         this.encodedHeight = encodedHeight;
@@ -83,6 +85,7 @@ public class EncodedImage {
         this.qp = qp;
         this.mediaFormat = mediaFormat;
         this.bufferInfo = bufferInfo;
+        this.index = index;
     }
 
     public static Builder builder() {
@@ -100,6 +103,7 @@ public class EncodedImage {
         private Integer qp;
         private MediaFormat mediaFormat;
         private MediaCodec.BufferInfo bufferInfo;
+        private int frameIndex = 0;
 
         private Builder() {
         }
@@ -116,12 +120,6 @@ public class EncodedImage {
 
         public Builder setEncodedHeight(int encodedHeight) {
             this.encodedHeight = encodedHeight;
-            return this;
-        }
-
-        @Deprecated
-        public Builder setCaptureTimeMs(long captureTimeMs) {
-            this.captureTimeNs = TimeUnit.MILLISECONDS.toNanos(captureTimeMs);
             return this;
         }
 
@@ -150,19 +148,25 @@ public class EncodedImage {
             return this;
         }
 
+        public Builder setFrameIndex(int index){
+            frameIndex = index;
+            return this;
+        }
+
         /**
          * for IMediaMuxer
+         *
          * @param bufferInfo
          * @return
          */
-        public Builder setBufferInfo(MediaCodec.BufferInfo bufferInfo){
+        public Builder setBufferInfo(MediaCodec.BufferInfo bufferInfo) {
             this.bufferInfo = bufferInfo;
             return this;
         }
 
         public EncodedImage createEncodedImage() {
             return new EncodedImage(buffer, encodedWidth, encodedHeight, captureTimeNs, frameType,
-                    rotation, completeFrame, qp,mediaFormat,bufferInfo);
+                    rotation, completeFrame, qp, mediaFormat, bufferInfo,frameIndex);
         }
     }
 

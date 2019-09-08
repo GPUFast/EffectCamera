@@ -15,15 +15,15 @@ import java.lang.ref.WeakReference;
  * 然后送给编码器进行编码
  */
 public class VideoClient {
-
-    private EncoderThread mEncoderThread;
+    private static final String TAG = "VideoClient";
+    private VideoEncoderThread mEncoderThread;
     private PresentationTime pTime;
 
     public VideoClient(VideoEncoder encoder,
                        VideoEncoder.Settings settings,
                        VideoEncoder.VideoEncoderCallback callback) {
 
-        mEncoderThread = new EncoderThread(encoder, settings, callback);
+        mEncoderThread = new VideoEncoderThread(encoder, settings, callback);
         pTime = new PresentationTime(settings.maxFrameRate);
     }
 
@@ -37,35 +37,34 @@ public class VideoClient {
 
     public void sendVideoFrame(int textureId, int srcWidth, int srcHeight) {
         if (mEncoderThread != null && mEncoderThread.isReady()) {
-
             pTime.record();
-
             VideoFrame videoFrame = new VideoFrame(
                     new TextureBufferImpl(textureId, srcWidth,
                             srcHeight, VideoFrame.TextureBuffer.TextureType.RGB),
                     0, pTime.presentationTimeNs);
-
             mEncoderThread.getHandler().sendVideoFrame(videoFrame);
         }
     }
 
     public void stop() {
-        mEncoderThread.getHandler().sendToStop();
+        if (mEncoderThread.isReady()) {
+            mEncoderThread.getHandler().sendToStop();
+            mEncoderThread.waitUntilStop();
+            ELog.i(TAG, "video client has stop");
+        }
     }
 
-    private static class EncoderThread extends Thread {
-        private static final String TAG = EncoderThread.class.getSimpleName();
-        private final Object mStartLock = new Object();
+    private static class VideoEncoderThread extends Thread {
+        private static final String TAG = VideoEncoderThread.class.getSimpleName();
+        private final Object mLock = new Object();
         private boolean mReady = false;
         private EncoderHandler mEncoderHandler;
-
-
         private VideoEncoder mVideoEncoder;
         private VideoEncoder.Settings mSettings;
         VideoEncoder.VideoEncoderCallback mCallback;
 
-        EncoderThread(VideoEncoder encoder, VideoEncoder.Settings settings,
-                      VideoEncoder.VideoEncoderCallback callback) {
+        VideoEncoderThread(VideoEncoder encoder, VideoEncoder.Settings settings,
+                           VideoEncoder.VideoEncoderCallback callback) {
             mVideoEncoder = encoder;
             mSettings = settings;
             mCallback = callback;
@@ -84,19 +83,34 @@ public class VideoClient {
             Looper.prepare();
             mEncoderHandler = new EncoderHandler(this);
             initEncoder();
-            synchronized (mStartLock) {
+            synchronized (mLock) {
                 mReady = true;
-                mStartLock.notify();
+                mLock.notify();
             }
             Looper.loop();
             deInitEncoder();
+            synchronized (mLock) {
+                mReady = false;
+                mLock.notify();
+            }
+            ELog.i(TAG, "video encoder thread quit.");
         }
 
         void waitUntilReady() {
-            synchronized (mStartLock) {
+            synchronized (mLock) {
                 while (!mReady) {
                     try {
-                        mStartLock.wait();
+                        mLock.wait();
+                    } catch (InterruptedException ie) { /* not expected */ }
+                }
+            }
+        }
+
+        void waitUntilStop() {
+            synchronized (mLock) {
+                while (mReady) {
+                    try {
+                        mLock.wait();
                     } catch (InterruptedException ie) { /* not expected */ }
                 }
             }
@@ -115,9 +129,9 @@ public class VideoClient {
         }
 
         private void shutdown() {
-            ELog.d(TAG, "shutdown");
             Looper.myLooper().quit();
         }
+
 
         private void deInitEncoder() {
             if (mVideoEncoder != null) {
@@ -133,9 +147,9 @@ public class VideoClient {
         private static final int ON_FRAME_AVAILABLE = 0x001;
         private static final int ON_STOP = 0x002;
 
-        private WeakReference<VideoClient.EncoderThread> mWeakEncoderThread;
+        private WeakReference<VideoClient.VideoEncoderThread> mWeakEncoderThread;
 
-        EncoderHandler(VideoClient.EncoderThread thread) {
+        EncoderHandler(VideoClient.VideoEncoderThread thread) {
             mWeakEncoderThread = new WeakReference<>(thread);
         }
 
@@ -151,7 +165,7 @@ public class VideoClient {
         @Override
         public void handleMessage(Message msg) {
 
-            EncoderThread encoderThread = mWeakEncoderThread.get();
+            VideoEncoderThread encoderThread = mWeakEncoderThread.get();
             if (encoderThread == null) {
                 ELog.e(TAG, "mWeakEncoderThread.get() == null");
                 return;
