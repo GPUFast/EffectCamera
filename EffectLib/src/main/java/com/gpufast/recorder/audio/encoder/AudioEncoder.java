@@ -3,7 +3,9 @@ package com.gpufast.recorder.audio.encoder;
 import android.media.MediaFormat;
 
 import com.gpufast.recorder.audio.AudioFrame;
+import com.gpufast.recorder.audio.AudioSetting;
 import com.gpufast.recorder.audio.EncodedAudio;
+import com.gpufast.recorder.video.EncoderType;
 
 public interface AudioEncoder {
 
@@ -17,7 +19,7 @@ public interface AudioEncoder {
         }
     }
 
-    AudioCodecStatus init(AudioEncoder.Settings settings, AudioEncoderCallback callback);
+    AudioCodecStatus init(AudioSetting settings, AudioEncoderCallback callback);
 
     void encode(AudioFrame frame);
 
@@ -28,5 +30,7 @@ public interface AudioEncoder {
         void onUpdateAudioMediaFormat(MediaFormat mediaFormat);
 
         void onEncodedAudio(EncodedAudio frame);
+
+        void onAudioEncoderStop();
     }
 }
