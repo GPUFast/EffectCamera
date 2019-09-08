@@ -8,7 +8,6 @@ import com.gpufast.recorder.audio.EncodedAudio;
 import com.gpufast.recorder.video.EncodedImage;
 
 import java.io.IOException;
-import java.lang.annotation.Target;
 
 /**
  * 视频合成接口
@@ -19,7 +18,7 @@ public class Mp4Muxer extends IMediaMuxer {
     private MediaMuxer mMediaMuxer;
     private int audioTrackIndex = -1;
     private int videoTrackIndex = -1;
-    private int trackCount = 0;
+    private volatile int trackCount = 0;
     private boolean muxerStarted = false;
     private boolean videoTrackReady = false;
     private boolean audioTrackReady = false;
@@ -90,18 +89,6 @@ public class Mp4Muxer extends IMediaMuxer {
         }
     }
 
-    @Override
-    public void onVideoEncoderStop() {
-        ELog.i(TAG, "onVideoEncoderStop:" + trackCount);
-        stopMuxer();
-    }
-
-    @Override
-    public void onAudioEncoderStop() {
-        ELog.i(TAG, "onAudioEncoderStop:" + trackCount);
-        stopMuxer();
-    }
-
 
     @Override
     public void onEncodedAudio(EncodedAudio frame) {
@@ -121,10 +108,22 @@ public class Mp4Muxer extends IMediaMuxer {
         }
     }
 
+    @Override
+    public void onVideoEncoderStop() {
+        ELog.i(TAG, "onVideoEncoderStop. trackCount=" + trackCount);
+        stopMuxer();
+    }
+
+    @Override
+    public void onAudioEncoderStop() {
+        ELog.i(TAG, "onAudioEncoderStop: trackCount=" + trackCount);
+        stopMuxer();
+    }
+
     private void stopMuxer() {
         synchronized (Mp4Muxer.class) {
             trackCount--;
-            ELog.i(TAG, "trackcount:" + trackCount);
+            ELog.i(TAG, "stopMuxer trackCount:" + trackCount);
             if (trackCount <= 0) {
                 release();
             }
