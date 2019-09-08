@@ -38,9 +38,20 @@ public class HwAudioEncoderFactory implements AudioEncoderFactory {
             if (codecSupportsType(info, type)) {
                 return info;
             }
+
+            if (isHWCodec(info)){
+                //TODO:查找真正的硬编码器
+            }
         }
         ELog.e(TAG, "Cannot retrieve audio encoder codec.");
         return null;
+    }
+
+    private boolean isHWCodec(MediaCodecInfo info) {
+
+
+
+        return false;
     }
 
 

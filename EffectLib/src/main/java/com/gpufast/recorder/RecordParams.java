@@ -1,6 +1,8 @@
 package com.gpufast.recorder;
 
 
+import android.media.AudioFormat;
+
 import com.gpufast.logger.ELog;
 
 public class RecordParams {
@@ -8,13 +10,17 @@ public class RecordParams {
     private static final String TAG = "RecordParams";
 
     //视频码率(Kilobits per second）
-    private final static int DEFAULT_VIDEO_BITRATE = 1500;
+    private final static int DEFAULT_VIDEO_BITRATE = 15000;
     //视频帧率
     private final static int DEFAULT_VIDEO_FRAME_RATE = 30;
     //音频采样率
     private final static int DEFAULT_AUDIO_SAMPLE_RATE = 44100;
     //音频码率bps
     private final static int DEFAULT_AUDIO_BITRATE = 64000;
+    //默认麦克风声音输出格式
+    private final static int DEFAULT_AUDIO_FORMAT = AudioFormat.ENCODING_PCM_16BIT;
+    //默认麦克风声音输入声音通道个数
+    private final static int DEFAULT_AUDIO_CHANNELS = 1;
 
     public enum SpeedType {
         hyperslow, slow, standard, fast, veryFast
@@ -40,14 +46,9 @@ public class RecordParams {
     private String savePath;
 
     /**
-     * 是否录制语音
+     * 是否静音录制
      */
-    private boolean enableAudio;
-
-    /**
-     * 是否录制视频
-     */
-    private boolean enableVideo;
+    private boolean muteMic;
 
     /**
      * 录制速度
@@ -69,8 +70,7 @@ public class RecordParams {
         videoHeight = builder.videoHeight;
         allTime = builder.allTime;
         savePath = builder.savePath;
-        enableVideo = builder.enableVideo;
-        enableAudio = builder.enableAudio;
+        muteMic = builder.muteMic;
         speedType = builder.speedType;
         backgroundMusicUrl = builder.backgroundMusicUrl;
         enableHwEncoder = builder.enableHwEncoder;
@@ -93,9 +93,10 @@ public class RecordParams {
         return savePath;
     }
 
-    public boolean isEnableAudio() {
-        return enableAudio;
+    public boolean isMuteMic() {
+        return muteMic;
     }
+
 
     public SpeedType getSpeedType() {
         return speedType;
@@ -107,10 +108,6 @@ public class RecordParams {
 
     public boolean isEnableHwEncoder() {
         return enableHwEncoder;
-    }
-
-    public boolean isEnableVideo() {
-        return enableVideo;
     }
 
     public int getVideoBitrate() {
@@ -129,14 +126,20 @@ public class RecordParams {
         return DEFAULT_AUDIO_BITRATE;
     }
 
+    public int getAudioRecordChannels() {
+        return DEFAULT_AUDIO_CHANNELS;
+    }
+
+    public int getAduioRecordFormat() {
+        return DEFAULT_AUDIO_FORMAT;
+    }
 
     public static class Builder {
         private int videoWidth;
         private int videoHeight;
         private int allTime;
         private String savePath;
-        private boolean enableAudio = false;
-        private boolean enableVideo = false;
+        private boolean muteMic = false;
         private SpeedType speedType;
         private String backgroundMusicUrl;
         private boolean enableHwEncoder = true;
@@ -153,16 +156,6 @@ public class RecordParams {
 
         public Builder setSavePath(String savePath) {
             this.savePath = savePath;
-            return this;
-        }
-
-        public Builder setEnableVideo(boolean enableVideo) {
-            this.enableVideo = enableVideo;
-            return this;
-        }
-
-        public Builder setEnableAudio(boolean enableAudio) {
-            this.enableAudio = enableAudio;
             return this;
         }
 
@@ -185,6 +178,10 @@ public class RecordParams {
             this.allTime = allTime;
             return this;
         }
+        public Builder setMuteMic(boolean muteMic) {
+            this.muteMic = muteMic;
+            return this;
+        }
 
         public RecordParams build() {
             return new RecordParams(this);
@@ -197,8 +194,7 @@ public class RecordParams {
                     ", videoHeight=" + videoHeight +
                     ", allTime=" + allTime +
                     ", savePath='" + savePath + '\'' +
-                    ", enableAudio=" + enableAudio +
-                    ", enableVideo=" + enableVideo +
+                    ", muteMic=" + muteMic +
                     ", speedType=" + speedType +
                     ", backgroundMusicUrl='" + backgroundMusicUrl + '\'' +
                     ", enableHwEncoder=" + enableHwEncoder +

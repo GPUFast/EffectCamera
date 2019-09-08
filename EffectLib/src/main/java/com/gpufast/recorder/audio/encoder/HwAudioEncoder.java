@@ -1,12 +1,12 @@
 package com.gpufast.recorder.audio.encoder;
 
-import android.media.AudioFormat;
 import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
 import android.media.MediaFormat;
 
 import com.gpufast.logger.ELog;
 import com.gpufast.recorder.audio.AudioFrame;
+import com.gpufast.recorder.audio.AudioSetting;
 import com.gpufast.recorder.audio.EncodedAudio;
 import com.gpufast.recorder.hardware.MediaCodecWrapper;
 import com.gpufast.recorder.hardware.MediaCodecWrapperFactory;
@@ -14,6 +14,7 @@ import com.gpufast.utils.ThreadUtils;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+
 
 /**
  * 音频硬编码器
@@ -43,15 +44,12 @@ public class HwAudioEncoder implements AudioEncoder {
     private MediaCodec.BufferInfo mBufferInfo;
 
     /**
-     * 音频编码回到
+     * 音频编码回调
      */
     private AudioEncoderCallback encoderCallback;
-    /**
-     * 声道数
-     */
-    private static final int CHANNEL = 2;
 
     private ThreadUtils.ThreadChecker checker;
+
 
     HwAudioEncoder(MediaCodecWrapperFactory mediaCodecFactory,
                    AudioCodecType codecType, String codecName) {
@@ -64,13 +62,11 @@ public class HwAudioEncoder implements AudioEncoder {
 
 
     @Override
-    public AudioCodecStatus init(AudioEncoder.Settings settings, AudioEncoderCallback callback) {
+    public AudioCodecStatus init(AudioSetting settings, AudioEncoderCallback callback) {
         checker.checkIsOnValidThread();
-
         if (settings == null) {
             return AudioCodecStatus.ERR_PARAMETER;
         }
-
         encoderCallback = callback;
         try {
             codec = mediaCodecFactory.createByCodecName(codecName);
@@ -78,29 +74,22 @@ public class HwAudioEncoder implements AudioEncoder {
             ELog.e(TAG, "Cannot create media encoder " + codecName);
             return AudioCodecStatus.FALLBACK_SOFTWARE;
         }
-
-
-        ELog.e(TAG, "init bitrate = " + settings.bitrate + " sample rate = " + settings.sampleRate +
-                " mimeType = " + codecType.mimeType());
+        ELog.i(TAG, "audioEncoder init. codecName:" + codecName +
+                " bitrate=" + settings.getBitrate() +
+                " sampleRate=" + settings.getSampleRate() +
+                " mimeType=" + codecType.mimeType());
 
         try {
             MediaFormat format = new MediaFormat();
-            format.setInteger(MediaFormat.KEY_BIT_RATE, settings.bitrate);
-            format.setInteger(MediaFormat.KEY_CHANNEL_COUNT, CHANNEL);
-            format.setInteger(MediaFormat.KEY_SAMPLE_RATE, settings.sampleRate);
             format.setString(MediaFormat.KEY_MIME, codecType.mimeType());
-            format.setInteger(MediaFormat.KEY_CHANNEL_MASK, AudioFormat.CHANNEL_IN_STEREO);
+            format.setInteger(MediaFormat.KEY_SAMPLE_RATE, settings.getSampleRate());
+            format.setInteger(MediaFormat.KEY_BIT_RATE, settings.getBitrate());
+            format.setInteger(MediaFormat.KEY_CHANNEL_COUNT, settings.getChannels());
+            format.setInteger(MediaFormat.KEY_CHANNEL_MASK, settings.getChannelConfig());
             format.setInteger(MediaFormat.KEY_AAC_PROFILE, MediaCodecInfo.CodecProfileLevel.AACObjectLC);
-            format.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE, 100 * 1024);
-
+            format.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE, settings.getInputBufferSize());
             codec.configure(format, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
-
-            if (encoderCallback != null) {
-                MediaFormat outputFormat = codec.getOutputFormat();
-                encoderCallback.onUpdateAudioMediaFormat(outputFormat);
-            }
             codec.start();
-
         } catch (IllegalStateException e) {
             ELog.e(TAG, "init failed:" + e.getLocalizedMessage());
             release();
@@ -110,12 +99,11 @@ public class HwAudioEncoder implements AudioEncoder {
         return AudioCodecStatus.OK;
     }
 
+
     @Override
     public void encode(AudioFrame frame) {
-
         checker.checkIsOnValidThread();
-
-        int inputBufferIndex = codec.dequeueInputBuffer(-1);
+        int inputBufferIndex = codec.dequeueInputBuffer(0);
         if (inputBufferIndex >= 0) {
             ByteBuffer inputBuffer = codec.getInputBuffer(inputBufferIndex);
             if (inputBuffer == null) {
@@ -126,33 +114,27 @@ public class HwAudioEncoder implements AudioEncoder {
             inputBuffer.put(frame.buf);
             inputBuffer.limit(frame.len);
             codec.queueInputBuffer(
-                    inputBufferIndex, 0, frame.len, frame.timeStamp, 0);
+                    inputBufferIndex, 0, frame.len, frame.timeStamp_us, 0);
         }
-
         int outputBufferIndex = codec.dequeueOutputBuffer(mBufferInfo, 0);
-
         while (outputBufferIndex >= 0) {
-
             ByteBuffer outputData = codec.getOutputBuffer(outputBufferIndex);
-
             EncodedAudio encodedAudio = new EncodedAudio.Builder()
                     .setBuffer(outputData)
                     .setBufferInfo(mBufferInfo)
                     .createEncodedAudio();
             if (encoderCallback != null) {
+                encoderCallback.onUpdateAudioMediaFormat(codec.getOutputFormat());
                 encoderCallback.onEncodedAudio(encodedAudio);
             }
-
-            codec.releaseOutputBuffer(outputBufferIndex, frame.timeStamp);
+            codec.releaseOutputBuffer(outputBufferIndex, 0);
             outputBufferIndex = codec.dequeueOutputBuffer(mBufferInfo, 0);
         }
     }
 
-
     @Override
     public void release() {
         checker.checkIsOnValidThread();
-
         if (codec != null) {
             codec.stop();
         }
@@ -160,5 +142,8 @@ public class HwAudioEncoder implements AudioEncoder {
             codec.release();
         }
         checker.detachThread();
+        if (encoderCallback != null) {
+            encoderCallback.onAudioEncoderStop();
+        }
     }
 }

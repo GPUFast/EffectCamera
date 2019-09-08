@@ -14,101 +14,135 @@ import java.io.IOException;
  */
 public class Mp4Muxer extends IMediaMuxer {
     private static final String TAG = Mp4Muxer.class.getSimpleName();
+
     private MediaMuxer mMediaMuxer;
     private int audioTrackIndex = -1;
     private int videoTrackIndex = -1;
+    private volatile int trackCount = 0;
+    private boolean muxerStarted = false;
+    private boolean videoTrackReady = false;
+    private boolean audioTrackReady = false;
 
-    private boolean mediaMuxerStarted = false;
-    private boolean videoTrackHasReady = false;
-    private boolean audioTrackHasRead = false;
-    private boolean hasRelease = false;
+    private boolean muteMic;
 
-    private boolean enableVideo;
-    private boolean enableAudio;
 
     Mp4Muxer(Setting setting) {
-        if (setting == null) {
+        if (setting == null)
             throw new IllegalArgumentException("setting is null object");
-        }
-        enableAudio = setting.enableAudio;
-        enableVideo = setting.enableVideo;
         try {
             mMediaMuxer = new MediaMuxer(setting.savePath, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4);
+            initMuxer(setting);
         } catch (IOException e) {
             ELog.e(TAG, "Init IMediaMuxer:" + e.getMessage());
         }
     }
 
-    @Override
-    public void onUpdateVideoMediaFormat(MediaFormat format) {
-        if (!enableVideo || videoTrackHasReady || hasRelease) return;
-        ELog.i(TAG, "onUpdateVideoMediaFormat:" + format);
-        videoTrackIndex = mMediaMuxer.addTrack(format);
-        if (videoTrackIndex < 0) {
-            ELog.e(TAG, "Add video track failed");
-            return;
+    private void initMuxer(Setting setting) {
+        muteMic = setting.muteMic;
+        trackCount = 2;
+        if (muteMic) {
+            trackCount = 1;
         }
-        videoTrackHasReady = true;
-        ELog.i(TAG, "video track has ready");
+        ELog.i(TAG, "init muxer trackCount:" + trackCount);
     }
+
 
     @Override
     public void onUpdateAudioMediaFormat(MediaFormat mediaFormat) {
-        if (!enableAudio || audioTrackHasRead || hasRelease) return;
-        ELog.i(TAG, "onUpdateAudioMediaFormat");
+        if (audioTrackReady || muteMic) return;
+        ELog.i(TAG, "onUpdateAudioMediaFormat" + mediaFormat);
         audioTrackIndex = mMediaMuxer.addTrack(mediaFormat);
         if (audioTrackIndex < 0) {
             ELog.e(TAG, "Add audio track failed");
             return;
         }
-        audioTrackHasRead = true;
+        audioTrackReady = true;
+        ELog.i(TAG, "audio track has ready");
+    }
+
+
+    @Override
+    public void onUpdateVideoMediaFormat(MediaFormat mediaFormat) {
+        if (videoTrackReady) return;
+        ELog.i(TAG, "onUpdateAudioMediaFormat" + mediaFormat);
+        videoTrackIndex = mMediaMuxer.addTrack(mediaFormat);
+        if (videoTrackIndex < 0) {
+            ELog.e(TAG, "Add video track failed");
+            return;
+        }
+        if (!muteMic) {
+            while (!audioTrackReady) {
+                Thread.yield();
+            }
+        }
+        videoTrackReady = true;
+        ELog.i(TAG, "video track has ready");
     }
 
     @Override
     public void onEncodedFrame(EncodedImage frame) {
-        if ((videoTrackHasReady && !enableAudio) || (videoTrackHasReady && audioTrackHasRead)) {
+        if ((videoTrackReady && audioTrackReady) || (videoTrackReady && muteMic)) {
             start();
             mMediaMuxer.writeSampleData(videoTrackIndex, frame.buffer, frame.bufferInfo);
-            ELog.i(TAG, "Write video data ，time=" + frame.bufferInfo.presentationTimeUs);
+            ELog.i(TAG, "mux video data，index=" + frame.index
+                    + " timeStamp:" + frame.bufferInfo.presentationTimeUs);
         }
     }
 
 
     @Override
     public void onEncodedAudio(EncodedAudio frame) {
-        if ((audioTrackHasRead && !enableVideo) || (audioTrackHasRead && videoTrackHasReady)) {
-            start();
-            mMediaMuxer.writeSampleData(audioTrackIndex, frame.mBuffer, frame.mBufferInfo);
-            ELog.i(TAG, "Write audio data，time=" + frame.mBufferInfo.presentationTimeUs);
+        if (muxerStarted) {
+            mMediaMuxer.writeSampleData(audioTrackIndex, frame.buffer, frame.bufferInfo);
+            ELog.i(TAG, "mux audio data，timeStamp=" + frame.bufferInfo.presentationTimeUs);
         }
     }
 
     private void start() {
-        if (mediaMuxerStarted) {
-            return;
-        }
+        if (muxerStarted) return;
         synchronized (Mp4Muxer.class) {
-            if (!mediaMuxerStarted) {
-                mediaMuxerStarted = true;
+            if (!muxerStarted) {
                 mMediaMuxer.start();
+                muxerStarted = true;
             }
         }
     }
 
-    public void release() {
-        ELog.i(TAG, "Release IMediaMuxer");
+    @Override
+    public void onVideoEncoderStop() {
+        ELog.i(TAG, "onVideoEncoderStop. trackCount=" + trackCount);
+        stopMuxer();
+    }
+
+    @Override
+    public void onAudioEncoderStop() {
+        ELog.i(TAG, "onAudioEncoderStop: trackCount=" + trackCount);
+        stopMuxer();
+    }
+
+    private void stopMuxer() {
+        synchronized (Mp4Muxer.class) {
+            trackCount--;
+            ELog.i(TAG, "stopMuxer trackCount:" + trackCount);
+            if (trackCount <= 0) {
+                release();
+            }
+        }
+    }
+
+    void release() {
+        ELog.i(TAG, "start release mp4Muxer");
         try {
             if (mMediaMuxer != null) {
                 mMediaMuxer.release();
             }
+            videoTrackIndex = -1;
+            audioTrackIndex = -1;
+            muxerStarted = false;
         } catch (Exception e) {
-            ELog.e(TAG, "Release IMediaMuxer:" + e.getMessage());
+            e.printStackTrace();
         }
-        hasRelease = true;
-        videoTrackIndex = -1;
-        audioTrackIndex = -1;
-        videoTrackHasReady = false;
-        audioTrackHasRead = false;
+        ELog.i(TAG, "release mp4Muxer success");
     }
 
 }

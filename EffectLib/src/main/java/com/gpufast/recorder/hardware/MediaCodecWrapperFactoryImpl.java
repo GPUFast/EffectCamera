@@ -1,7 +1,5 @@
 package com.gpufast.recorder.hardware;
 
-import android.annotation.SuppressLint;
-import android.annotation.TargetApi;
 import android.media.MediaCodec;
 import android.media.MediaCrypto;
 import android.media.MediaFormat;
@@ -61,10 +59,13 @@ public class MediaCodecWrapperFactoryImpl implements MediaCodecWrapperFactory {
             return mediaCodec.dequeueOutputBuffer(info, timeoutUs);
         }
 
-        @SuppressLint("NewApi")
         @Override
-        public void releaseOutputBuffer(int index, long render) {
-            mediaCodec.releaseOutputBuffer(index, render);
+        public void releaseOutputBuffer(int index, long renderTimestampNs) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                mediaCodec.releaseOutputBuffer(index, renderTimestampNs);
+            } else {
+                mediaCodec.releaseOutputBuffer(index, renderTimestampNs != 0);
+            }
         }
 
         @Override
@@ -73,23 +74,20 @@ public class MediaCodecWrapperFactoryImpl implements MediaCodecWrapperFactory {
         }
 
         @Override
-        public ByteBuffer[] getInputBuffers() {
-            return mediaCodec.getInputBuffers();
+        public ByteBuffer getOutputBuffer(int index) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                return mediaCodec.getOutputBuffer(index);
+            } else {
+                return mediaCodec.getOutputBuffers()[index];
+            }
         }
 
         @Override
-        public ByteBuffer[] getOutputBuffers() {
-            return mediaCodec.getOutputBuffers();
-        }
-
-        @Override
-        @TargetApi(18)
         public Surface createInputSurface() {
             return mediaCodec.createInputSurface();
         }
 
         @Override
-        @TargetApi(19)
         public void setParameters(Bundle params) {
             mediaCodec.setParameters(params);
         }
@@ -98,21 +96,12 @@ public class MediaCodecWrapperFactoryImpl implements MediaCodecWrapperFactory {
         public ByteBuffer getInputBuffer(int inputBufferIndex) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                 return mediaCodec.getInputBuffer(inputBufferIndex);
-            }else{
+            } else {
                 ByteBuffer[] inputBuffers = mediaCodec.getInputBuffers();
-               return inputBuffers[inputBufferIndex];
+                return inputBuffers[inputBufferIndex];
             }
         }
 
-        @Override
-        public ByteBuffer getOutputBuffer(int outputBufferIndex) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                return mediaCodec.getOutputBuffer(outputBufferIndex);
-            }else{
-                ByteBuffer[] outputBuffers = mediaCodec.getOutputBuffers();
-                return outputBuffers[outputBufferIndex];
-            }
-        }
     }
 
     @Override

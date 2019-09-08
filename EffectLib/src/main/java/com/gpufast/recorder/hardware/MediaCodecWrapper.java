@@ -25,13 +25,9 @@ public interface MediaCodecWrapper {
 
     int dequeueOutputBuffer(MediaCodec.BufferInfo info, long timeoutUs);
 
-    void releaseOutputBuffer(int index, long render);
+    void releaseOutputBuffer(int index, long renderTimestampNs);
 
     MediaFormat getOutputFormat();
-
-    ByteBuffer[] getInputBuffers();
-
-    ByteBuffer[] getOutputBuffers();
 
     Surface createInputSurface();
 

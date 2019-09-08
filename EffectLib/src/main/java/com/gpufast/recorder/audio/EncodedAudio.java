@@ -6,12 +6,12 @@ import java.nio.ByteBuffer;
 
 public class EncodedAudio {
 
-    public final ByteBuffer mBuffer;
-    public final MediaCodec.BufferInfo mBufferInfo;
+    public final ByteBuffer buffer;
+    public final MediaCodec.BufferInfo bufferInfo;
 
     private EncodedAudio(ByteBuffer mBuffer, MediaCodec.BufferInfo mBufferInfo) {
-        this.mBuffer = mBuffer;
-        this.mBufferInfo = mBufferInfo;
+        this.buffer = mBuffer;
+        this.bufferInfo = mBufferInfo;
     }
 
 

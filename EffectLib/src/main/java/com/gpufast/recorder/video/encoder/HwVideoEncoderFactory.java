@@ -22,7 +22,7 @@ import java.util.List;
  * 该类的主要目的是，对想要选择的硬编码器进行提前探测，检测
  * 确保能准确的获得想要的编码器
  */
-public class HardwareVideoEncoderFactory implements VideoEncoderFactory {
+public class HwVideoEncoderFactory implements VideoEncoderFactory {
 
     private static final String TAG = "HardwareVideoEncoderFac";
     private EGLContext sharedContext;
@@ -73,7 +73,7 @@ public class HardwareVideoEncoderFactory implements VideoEncoderFactory {
         Integer surfaceColorFormat = MediaCodecUtils.selectColorFormat(
                 MediaCodecUtils.TEXTURE_COLOR_FORMATS, info.getCapabilitiesForType(mime));
 
-        return new HardwareVideoEncoder(new MediaCodecWrapperFactoryImpl(), codecName, type,
+        return new HwVideoEncoder(new MediaCodecWrapperFactoryImpl(), codecName, type,
                 surfaceColorFormat, inputCodecInfo.params, getKeyFrameIntervalSec(type),
                 new FrameRateBitrateAdjuster(),
                 sharedContext);

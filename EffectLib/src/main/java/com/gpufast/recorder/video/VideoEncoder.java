@@ -42,5 +42,7 @@ public interface VideoEncoder {
         void onUpdateVideoMediaFormat(MediaFormat format);
 
         void onEncodedFrame(EncodedImage frame);
+
+        void onVideoEncoderStop();
     }
 }
