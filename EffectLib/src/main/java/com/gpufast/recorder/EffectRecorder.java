@@ -12,19 +12,12 @@ import com.gpufast.recorder.video.VideoClient;
 public class EffectRecorder extends BaseRecorder {
     private static final String TAG = EffectRecorder.class.getSimpleName();
 
-    private volatile boolean isStartingRecorder = false;
-
-    private volatile boolean recorderStarted = false;
-
-    private IMediaMuxer mMediaMuxer;
-
+    private volatile boolean recordStarting = false;
+    private volatile boolean recordStarted = false;
     private VideoClient mVideoClient;
-
     private AudioClient mAudioClient;
-
-    private RecorderListener mRecorderListener;
-
     private RecordParams mRecordParams;
+    private RecorderListener mRecorderListener;
 
     EffectRecorder() {
     }
@@ -34,11 +27,9 @@ public class EffectRecorder extends BaseRecorder {
         if (params == null) {
             return;
         }
-        if (params.isEnableVideo()) {
-            initVideoRecorder(params);
-        }
-        if (params.isEnableAudio()) {
-            initAudioRecorder(params);
+        initVideoParams(params);
+        if (!params.isMuteMic()) {
+            initAudioParams(params);
         }
         mRecordParams = params;
     }
@@ -50,40 +41,38 @@ public class EffectRecorder extends BaseRecorder {
 
     @Override
     public boolean isRecording() {
-        return recorderStarted;
+        return recordStarted;
     }
 
     @Override
     public void startRecorder() {
-        if (isStartingRecorder || recorderStarted) {
+        if (recordStarting || recordStarted) {
             return;
         }
         ELog.i(TAG, "startRecorder");
-        isStartingRecorder = true;
-
-        mMediaMuxer = MediaMuxerFactory.createMediaMuxer(mRecordParams, MuxerType.MP4);
-
-        mVideoClient = createVideoClient(mMediaMuxer);
-
+        recordStarting = true;
+        IMediaMuxer mediaMuxer = MediaMuxerFactory.createMediaMuxer(mRecordParams, MuxerType.MP4);
+        mVideoClient = createVideoClient(mediaMuxer);
         if (mVideoClient != null) {
             mVideoClient.start();
         }
-
-        mAudioClient = createAudioClient(mMediaMuxer);
+        mAudioClient = createAudioClient(mediaMuxer);
         if (mAudioClient != null) {
+            if (mAudioProcessor != null) {
+                mAudioClient.setAudioPreprocessor(mAudioProcessor);
+            }
             mAudioClient.start();
         }
-
         if (mRecorderListener != null) {
             mRecorderListener.onRecorderStart();
         }
-        recorderStarted = true;
+        recordStarted = true;
     }
 
 
     @Override
     public void sendVideoFrame(int textureId, int srcWidth, int srcHeight) {
-        if (mVideoClient != null && recorderStarted) {
+        if (mVideoClient != null && recordStarted) {
             mVideoClient.sendVideoFrame(textureId, srcWidth, srcHeight);
         }
     }
@@ -91,22 +80,16 @@ public class EffectRecorder extends BaseRecorder {
 
     @Override
     public void stopRecorder() {
-        ELog.i(TAG, "stop recorder");
+        ELog.i(TAG, "start stop recorder");
+        recordStarted = false;
         if (mVideoClient != null) {
             mVideoClient.stop();
         }
-
         if (mAudioClient != null) {
             mAudioClient.stop();
         }
-        if (mMediaMuxer != null) {
-            mMediaMuxer.release();
-            mMediaMuxer = null;
-        }
-
-        isStartingRecorder = false;
-        recorderStarted = false;
-
+        recordStarting = false;
+        ELog.i(TAG, "stop recorder finish");
         if (mRecorderListener != null) {
             mRecorderListener.onRecorderStop();
         }
@@ -127,10 +110,13 @@ public class EffectRecorder extends BaseRecorder {
 
     @Override
     public void release() {
-
         if (mAudioClient != null) {
             mAudioClient.release();
             mVideoClient = null;
+        }
+        if (mAudioClient != null) {
+            mAudioClient.release();
+            mAudioClient = null;
         }
     }
 

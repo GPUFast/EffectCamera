@@ -36,21 +36,20 @@ public abstract class BaseRecorder implements IRecorder {
     private AudioCodecInfo audioCodecInfo;
 
 
-    AudioProcessor mAudioFrameCallback;
-
+    protected AudioProcessor mAudioProcessor;
 
     @Override
-    public void setAudioProcessor(AudioProcessor callback) {
-        mAudioFrameCallback = callback;
+    public void setAudioProcessor(AudioProcessor processor) {
+        mAudioProcessor = processor;
     }
 
 
     /**
-     * 初始化视频录音器
+     * 初始化视频录制
      *
      * @param params 录音器参数
      */
-    void initVideoRecorder(RecordParams params) {
+    void initVideoParams(RecordParams params) {
         videoSettings = new VideoEncoder.Settings(params.getVideoWidth(),
                 params.getVideoHeight(), params.getVideoBitrate(), params.getVideoFrameRate());
 
@@ -94,8 +93,12 @@ public abstract class BaseRecorder implements IRecorder {
     }
 
 
-    void initAudioRecorder(RecordParams params) {
-        audioSetting = new AudioSetting(params.getAudioSampleRate(), params.getAudioBitrate());
+    void initAudioParams(RecordParams params) {
+        audioSetting = new AudioSetting(
+                params.getAudioSampleRate(),
+                params.getAudioBitrate(),
+                params.getAudioRecordChannels(),
+                params.getAduioRecordFormat());
         if (params.isEnableHwEncoder()) {
             audioEncoderFactory = EncoderFactory.getAudioEncoder(EncoderType.HW_AUDIO_ENCODER);
         } else {
