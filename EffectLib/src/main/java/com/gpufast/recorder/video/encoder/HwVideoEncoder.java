@@ -250,6 +250,7 @@ class HwVideoEncoder implements VideoEncoder {
             }
         }
 
+        frameIndex++;
         if (outputBuilders.size() > MAX_ENCODER_Q_SIZE) {
             //编码器中的有太多帧数据，需要丢掉该帧
             ELog.e(TAG, "Dropped frame, encoder queue full");
@@ -261,7 +262,7 @@ class HwVideoEncoder implements VideoEncoder {
                 .setCompleteFrame(true)
                 .setEncodedWidth(videoFrame.getBuffer().getWidth())
                 .setEncodedHeight(videoFrame.getBuffer().getHeight())
-                .setFrameIndex(frameIndex++)
+                .setFrameIndex(frameIndex)
                 .setRotation(videoFrame.getRotation());
 
         outputBuilders.offer(builder);
