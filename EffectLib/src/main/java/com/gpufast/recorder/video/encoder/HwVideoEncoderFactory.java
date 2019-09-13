@@ -61,14 +61,14 @@ public class HwVideoEncoderFactory implements VideoEncoderFactory {
         //根据类型查找编码器的信息
         MediaCodecInfo info = findCodecForType(type);
         if (info == null) {
-            ELog.e(this, "can't find Encoder by type" + inputCodecInfo.name);
+            ELog.e(TAG, "can't find Encoder by type" + inputCodecInfo.name);
             return null;
         }
 
         String codecName = info.getName();
 
         String mime = type.mimeType();
-        ELog.d(this, "codecName :" + codecName + " mime:" + mime);
+        ELog.d(TAG, "codecName :" + codecName + " mime:" + mime);
 
         Integer surfaceColorFormat = MediaCodecUtils.selectColorFormat(
                 MediaCodecUtils.TEXTURE_COLOR_FORMATS, info.getCapabilitiesForType(mime));
@@ -102,7 +102,7 @@ public class HwVideoEncoderFactory implements VideoEncoderFactory {
             try {
                 info = MediaCodecList.getCodecInfoAt(i);
             } catch (IllegalArgumentException e) {
-                ELog.e(this, "Cannot retrieve encoder codec info:"+e);
+                ELog.e(TAG, "Cannot retrieve encoder codec info:"+e);
             }
             if (info == null || !info.isEncoder()) {
                 continue;
