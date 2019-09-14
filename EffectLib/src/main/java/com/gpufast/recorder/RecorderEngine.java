@@ -72,8 +72,8 @@ public class RecorderEngine {
         create().stopRecorder();
     }
 
-    public void setRecorderListener(IRecorder.RecorderListener listener) {
-        create().setRecorderListener(listener);
+    public void setRecorderListener(IRecorder.RecordListener listener) {
+        create().setRecordListener(listener);
     }
 
     public static void release() {

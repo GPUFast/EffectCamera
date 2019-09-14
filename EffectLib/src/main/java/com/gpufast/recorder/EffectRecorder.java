@@ -17,7 +17,7 @@ public class EffectRecorder extends BaseRecorder {
     private VideoClient mVideoClient;
     private AudioClient mAudioClient;
     private RecordParams mRecordParams;
-    private RecorderListener mRecorderListener;
+    private RecordListener mRecordListener;
 
     EffectRecorder() {
     }
@@ -63,8 +63,8 @@ public class EffectRecorder extends BaseRecorder {
             }
             mAudioClient.start();
         }
-        if (mRecorderListener != null) {
-            mRecorderListener.onRecorderStart();
+        if (mRecordListener != null) {
+            mRecordListener.onRecordStart();
         }
         recordStarted = true;
     }
@@ -80,7 +80,7 @@ public class EffectRecorder extends BaseRecorder {
 
     @Override
     public void stopRecorder() {
-        ELog.i(TAG, "start stop recorder");
+        ELog.i(TAG, "do stop recorder");
         recordStarted = false;
         if (mVideoClient != null) {
             mVideoClient.stop();
@@ -90,8 +90,8 @@ public class EffectRecorder extends BaseRecorder {
         }
         recordStarting = false;
         ELog.i(TAG, "stop recorder finish");
-        if (mRecorderListener != null) {
-            mRecorderListener.onRecorderStop();
+        if (mRecordListener != null) {
+            mRecordListener.onRecordStop();
         }
     }
 
@@ -103,21 +103,14 @@ public class EffectRecorder extends BaseRecorder {
 
 
     @Override
-    public void setRecorderListener(RecorderListener listener) {
-        this.mRecorderListener = listener;
+    public void setRecordListener(RecordListener listener) {
+        this.mRecordListener = listener;
     }
 
 
     @Override
     public void release() {
-        if (mAudioClient != null) {
-            mAudioClient.release();
-            mVideoClient = null;
-        }
-        if (mAudioClient != null) {
-            mAudioClient.release();
-            mAudioClient = null;
-        }
+
     }
 
 

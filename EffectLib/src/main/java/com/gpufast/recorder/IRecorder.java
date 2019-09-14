@@ -54,16 +54,35 @@ public interface IRecorder {
      */
     void jointVideo();
 
-    void setRecorderListener(RecorderListener listener);
+    /**
+     * 设置录制监听回调
+     * @param listener listener
+     */
+    void setRecordListener(RecordListener listener);
 
+    /**
+     * 设置音频预处理
+     * @param processor processor
+     */
     void setAudioProcessor(AudioProcessor processor);
 
     void release();
 
-    interface RecorderListener {
+    interface RecordListener {
+        /**
+         * 开始录制
+         */
+        void onRecordStart();
 
-        void onRecorderStart();
+        /**
+         * 录制进度
+         * @param progress 录制时间(单位s)
+         */
+        void onProgress(long progress);
 
-        void onRecorderStop();
+        /**
+         * 停止录制
+         */
+        void onRecordStop();
     }
 }
