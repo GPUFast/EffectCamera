@@ -17,9 +17,9 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
-
+@SuppressWarnings("unused")
 public class FileWriter extends Thread {
-
+    private static final String TAG = "FileWriter";
     private WriteHandler mHandler;
     private FileOutputStream os;
     private FileChannel dstChannel;
@@ -30,6 +30,7 @@ public class FileWriter extends Thread {
         this.dstPath = dstPath;
     }
 
+    @SuppressWarnings("unused")
     public void startWrite() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             createChannel_up26(dstPath);
@@ -48,6 +49,7 @@ public class FileWriter extends Thread {
      *
      * @return true :合法，false:不合法
      */
+    @SuppressWarnings("all")
     private boolean checkoutFile(File file) {
         //非空检测
         if (file == null)
@@ -81,13 +83,13 @@ public class FileWriter extends Thread {
         try {
             File file = new File(dstPath);
             if (!checkoutFile(file)) {
-                ELog.e(this, "can't get file :" + dstPath);
+                ELog.e(TAG, "can't get file :" + dstPath);
                 return;
             }
             os = new FileOutputStream(file);
             dstChannel = os.getChannel();
         } catch (FileNotFoundException e) {
-            ELog.e(this, "create channel failed");
+            ELog.e(TAG, "create channel failed");
         }
     }
 
@@ -96,13 +98,13 @@ public class FileWriter extends Thread {
         try {
             File file = new File(dstPath);
             if (!checkoutFile(file)) {
-                ELog.e(this, "can't get file :" + dstPath);
+                ELog.e(TAG, "can't get file :" + dstPath);
                 return;
             }
             dstChannel = FileChannel
                 .open(Paths.get(dstPath), StandardOpenOption.READ, StandardOpenOption.WRITE, StandardOpenOption.CREATE);
         } catch (IOException e) {
-            ELog.e(this, "create channel failed");
+            ELog.e(TAG, "create channel failed");
         }
     }
 
@@ -110,14 +112,14 @@ public class FileWriter extends Thread {
     public void run() {
         Looper.prepare();
         mHandler = new WriteHandler(this);
-        ELog.d(this, "fileWriter start");
+        ELog.d(TAG, "fileWriter start");
         Looper.loop();
         release();
     }
 
     private void release() {
 
-        ELog.i(this, "fileWriter stop");
+        ELog.i(TAG, "fileWriter stop");
 
         if (dstChannel != null) {
             try {
@@ -139,12 +141,13 @@ public class FileWriter extends Thread {
         mHandler = null;
     }
 
+    @SuppressWarnings("unused")
     public void writeToFile(ByteBuffer data) {
         if (mHandler != null) {
             mHandler.sendToWriteFile(data);
         }
     }
-
+    @SuppressWarnings("unused")
     public void stopWrite() {
         if (mHandler != null) {
             mHandler.stopWrite();

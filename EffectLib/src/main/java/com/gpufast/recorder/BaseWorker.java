@@ -1,6 +1,5 @@
 package com.gpufast.recorder;
 
-import android.opengl.EGLContext;
 import android.os.Handler;
 
 import com.gpufast.recorder.audio.AudioProcessor;
@@ -15,7 +14,7 @@ public abstract class BaseWorker implements IRecorder {
         }
 
         @Override
-        public void setRecorderListener(RecorderListener listener) {
+        public void setRecordListener(RecordListener listener) {
 
         }
         @Override
@@ -35,7 +34,7 @@ public abstract class BaseWorker implements IRecorder {
         }
 
         @Override
-        public void setRecorderListener(RecorderListener listener) {
+        public void setRecordListener(RecordListener listener) {
         }
         @Override
         public void setAudioProcessor(AudioProcessor callback) {

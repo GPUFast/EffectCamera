@@ -17,10 +17,6 @@ public class ELog {
         throw new UnsupportedOperationException();
     }
 
-    public static void e(Object obj, String msg) {
-        if (obj == null) return;
-        e(obj.getClass(), msg);
-    }
 
     public static void e(Class<?> cls, String msg) {
         if (cls == null) return;
@@ -31,10 +27,6 @@ public class ELog {
         log(tag, ELOG_TAG + msg, ERROR_LEVEL);
     }
 
-    public static void w(Object obj, String msg) {
-        if (obj == null) return;
-        w(obj.getClass(), msg);
-    }
 
     public static void w(Class<?> cls, String msg) {
         if (cls == null) return;
@@ -45,10 +37,7 @@ public class ELog {
         log(tag, ELOG_TAG + msg, WARN_LEVEL);
     }
 
-    public static void d(Object obj, String msg) {
-        if (obj == null) return;
-        d(obj.getClass(), msg);
-    }
+
 
     public static void d(Class<?> cls, String msg) {
         if (cls == null) return;
@@ -59,10 +48,7 @@ public class ELog {
         log(tag, ELOG_TAG + msg, DEBUG_LEVEL);
     }
 
-    public static void i(Object obj, String msg) {
-        if (obj == null) return;
-        i(obj.getClass(), msg);
-    }
+
 
     public static void i(Class<?> cls, String msg) {
         if (cls == null) return;
@@ -74,10 +60,6 @@ public class ELog {
     }
 
 
-    public static void v(Object obj, String msg) {
-        if (obj == null) return;
-        v(obj.getClass(), msg);
-    }
 
     public static void v(Class<?> cls, String msg) {
         v(cls.getSimpleName(), msg);

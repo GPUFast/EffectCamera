@@ -74,10 +74,10 @@ class Worker extends BaseWorker {
     }
 
     @Override
-    public void setRecorderListener(RecorderListener listener) {
+    public void setRecordListener(RecordListener listener) {
         //不需要做线程同步
         if (recorder != null) {
-            recorder.setRecorderListener(listener);
+            recorder.setRecordListener(listener);
         }
     }
 
@@ -115,7 +115,6 @@ class Worker extends BaseWorker {
                 mStartLock.notify();
             }
             Looper.loop();
-            release();
         }
 
         @Override
@@ -165,10 +164,8 @@ class Worker extends BaseWorker {
 
         @Override
         public void release() {
-            if (mRecorder != null) {
-                mRecorder.release();
-                mRecorder = null;
-            }
+            stopRecorder();
+            Looper.myLooper().quit();
         }
 
         void waitUntilReady() {

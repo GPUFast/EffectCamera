@@ -71,7 +71,7 @@ public class HwAudioEncoderFactory implements AudioEncoderFactory {
         //根据类型查找编码器的信息
         MediaCodecInfo info = findCodecForType(type);
         if (info == null) {
-            ELog.e(this, "can't find Encoder by type" + inputCodecInfo.name);
+            ELog.e(TAG, "can't find Encoder by type" + inputCodecInfo.name);
             return null;
         }
         String name = info.getName();
